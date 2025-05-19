@@ -83,7 +83,6 @@ document.addEventListener("touchmove", (event) => {
 document.addEventListener("wheel", (event) => {
   // Normalize deltaY for consistent resizing across browsers
   const sizeChange = event.deltaY < 0 ? 10 : -10 // Scroll up: +10, Scroll down: -10
-  beeSize1 = Math.min(manualinvestigateSizeChange = event.deltaY < 0 ? 10 : -10 // Scroll up: +10, Scroll down: -10
   beeSize1 = Math.min(manualMaxSize, Math.max(minSize, beeSize1 + sizeChange))
 })
 
