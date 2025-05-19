@@ -1,7 +1,10 @@
 body {
   margin: 0;
   overflow: hidden;
-   background-image: url("https://i.pinimg.com/originals/2b/db/3b/2bdb3b3b3de43f362e6ffba022be1114.gif");
+  background-image: url("https://i.pinimg.com/originals/2b/db/3b/2bdb3b3b3de43f362e6ffba022be1114.gif");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
   font-family: Arial, sans-serif;
   height: 100vh;
 }
