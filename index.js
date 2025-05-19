@@ -83,6 +83,7 @@ document.addEventListener("touchmove", (event) => {
 document.addEventListener("wheel", (event) => {
   // Normalize deltaY for consistent resizing across browsers
   const sizeChange = event.deltaY < 0 ? 10 : -10 // Scroll up: +10, Scroll down: -10
+  beeSize1 = Math.min(manualinvestigateSizeChange = event.deltaY < 0 ? 10 : -10 // Scroll up: +10, Scroll down: -10
   beeSize1 = Math.min(manualMaxSize, Math.max(minSize, beeSize1 + sizeChange))
 })
 
@@ -221,7 +222,7 @@ function animate() {
     beeY1 - beeSize1 / 2
   }px) scaleX(${scaleX1}) rotate(${rotation1}deg)`
   bee1.style.width = `${beeSize1}px`
-  viên
+  bee1.style.height = `${beeSize1}px`
   bee2.style.transform = `translate(${beeX2 - beeSize2 / 2}px, ${
     beeY2 - beeSize2 / 2
   }px) scaleX(${scaleX2}) rotate(${rotation2}deg)`
