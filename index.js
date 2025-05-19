@@ -15,7 +15,7 @@ let maxSize = 150 // Distance-based max size
 let manualMaxSize = 500 // Manual max size for wheel adjustment
 let rotation1 = 0, rotation2 = 0
 
-const speed = 0.08 // Tăng tốc độ từ 0.05 lên 0.08 để ong di chuyển nhanh hơn
+const speed = 0.08 // Increased from 0.05 to 0.08 for faster movement
 let waypoints1 = [], waypoints2 = []
 const waypointCount = 5
 let currentWaypoint1 = 0, currentWaypoint2 = 0
@@ -25,9 +25,9 @@ const trailInterval = 40
 let lastTrailTime1 = 0, lastTrailTime2 = 0
 const trailElements1 = [], trailElements2 = []
 
-let isBee1Stunned = false, isBee2Stunned = false
+let isBee1Stunned = false, isBee2Stunned = falsa
 const stunDuration = 1000
-const collisionDistance = 120 // Tăng từ 80 lên 120 để tăng khả năng va chạm
+const collisionDistance = 120 // Increased from 80 to 120 for higher collision chance
 const bounceStrength = 200
 const spinSpeed = 360 // Degrees per second during stun
 
@@ -44,7 +44,7 @@ const generateWaypoints = (isBee2 = false, baseX = null, baseY = null) => {
   for (let i = 0; i < waypointCount; i++) {
     let x, y
     if (isBee2 && baseX !== null && baseY !== null && Math.random() < 0.7) {
-      // 70% waypoints của ong 2 sẽ gần ong 1 (trong bán kính 300px)
+      // 70% of bee2 waypoints are near bee1 (within 300px radius)
       const angle = Math.random() * 2 * Math.PI
       const radius = Math.random() * 300
       x = baseX + Math.cos(angle) * radius
@@ -59,7 +59,7 @@ const generateWaypoints = (isBee2 = false, baseX = null, baseY = null) => {
 }
 
 waypoints1 = generateWaypoints()
-waypoints2 = generateWaypoints(true, targetX1, targetY1) // Khởi tạo waypoints2 gần ong 1
+waypoints2 = generateWaypoints(true, targetX1, targetY1) // Initialize waypoints2 near bee1
 
 const distance = (x1, y1, x2, y2) => {
   return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
@@ -153,7 +153,7 @@ function animate() {
     if (distance(beeX1, beeY1, targetX1, targetY1) < 20) {
       currentWaypoint1 = (currentWaypoint1 + 1) % waypoints1.length
       if (currentWaypoint1 === 0) waypoints1 = generateWaypoints()
-      // Tái tạo waypoints2 để gần ong 1 khi waypoints1 được làm mới
+      // Regenerate waypoints2 to stay near bee1 when waypoints1 is refreshed
       waypoints2 = generateWaypoints(true, targetX1, targetY1)
     }
   }
@@ -199,7 +199,7 @@ function animate() {
     (Math.abs(beeX1 - prevBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
     currentTime - lastTrailTime1 > trailInterval
   ) {
-    createTrail(bee SaràX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1)
+    createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1) // Fixed typo: bee SaràX1 -> beeX1
     lastTrailTime1 = currentTime
   }
   if (
