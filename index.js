@@ -15,21 +15,21 @@ let maxSize = 150 // Distance-based max size
 let manualMaxSize = 500 // Manual max size for wheel adjustment
 let rotation1 = 0, rotation2 = 0
 
-const speed = 0.08 // Increased from 0.05 to 0.08 for faster movement
+const speed = 0.08 // Base speed for normal movement
 let waypoints1 = [], waypoints2 = []
 const waypointCount = 5
 let currentWaypoint1 = 0, currentWaypoint2 = 0
 
-const trailLength = 15
-const trailInterval = 40
+let trailLength = 15
+let trailInterval = 40
 let lastTrailTime1 = 0, lastTrailTime2 = 0
 const trailElements1 = [], trailElements2 = []
 
 let isBee1Stunned = false, isBee2Stunned = false
-const stunDuration = 1000
-const collisionDistance = 120 // Increased from 80 to 120 for higher collision chance
+const stunDuration = 1500 // Increased from 1000ms to 1500ms for more spins
+const collisionDistance = 120 // Increased for higher collision chance
 const bounceStrength = 200
-const spinSpeed = 360 // Degrees per second during stun
+const spinSpeed = 720 // Increased from 360 to 720 deg/s for faster spinning
 
 let lastMouseMove = Date.now()
 const idleTimeout = 2000 // 2 seconds of inactivity triggers idle mode
@@ -39,12 +39,18 @@ let velocityX1 = 0, velocityY1 = 0
 let velocityX2 = 0, velocityY2 = 0
 const friction = 0.95 // Damping factor for bounce velocity
 
+// Heart-shaped flight variables
+let isHeartFlight = false
+let heartT = 0
+const heartSpeed = 0.3 // High speed for heart path
+const heartDuration = 2000 // 2 seconds to complete heart
+let heartStartTime = 0
+
 const generateWaypoints = (isBee2 = false, baseX = null, baseY = null) => {
   const waypoints = []
   for (let i = 0; i < waypointCount; i++) {
     let x, y
     if (isBee2 && baseX !== null && baseY !== null && Math.random() < 0.7) {
-      // 70% of bee2 waypoints are near bee1 (within 300px radius)
       const angle = Math.random() * 2 * Math.PI
       const radius = Math.random() * 300
       x = baseX + Math.cos(angle) * radius
@@ -59,7 +65,7 @@ const generateWaypoints = (isBee2 = false, baseX = null, baseY = null) => {
 }
 
 waypoints1 = generateWaypoints()
-waypoints2 = generateWaypoints(true, targetX1, targetY1) // Initialize waypoints2 near bee1
+waypoints2 = generateWaypoints(true, targetX1, targetY1)
 
 const distance = (x1, y1, x2, y2) => {
   return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
@@ -72,31 +78,50 @@ const updateSize = (dist) => {
 }
 
 document.addEventListener("mousemove", (event) => {
-  targetX1 = event.clientX
-  targetY1 = event.clientY
-  lastMouseMove = Date.now()
-  isIdle1 = false
+  if (!isHeartFlight) {
+    targetX1 = event.clientX
+    targetY1 = event.clientY
+    lastMouseMove = Date.now()
+    isIdle1 = false
+  }
 })
 
 document.addEventListener("touchmove", (event) => {
-  event.preventDefault() // Prevent scrolling/zooming
-  if (event.touches.length > 0) {
-    targetX1 = event.touches[0].clientX
-    targetY1 = event.touches[0].clientY
-    lastMouseMove = Date.now()
-    isIdle1 = false
+  if (!isHeartFlight) {
+    event.preventDefault()
+    if (event.touches.length > 0) {
+      targetX1 = event.touches[0].clientX
+      targetY1 = event.touches[0].clientY
+      lastMouseMove = Date.now()
+      isIdle1 = false
+    }
   }
 }, { passive: false })
 
 document.addEventListener("wheel", (event) => {
-  const sizeChange = event.deltaY < 0 ? 10 : -10 // Scroll up: +10, Scroll down: -10
-  beeSize1 = Math.min(manualMaxSize, Math.max(minSize, beeSize1 + sizeChange))
+  if (!isHeartFlight) {
+    const sizeChange = event.deltaY < 0 ? 10 : -10
+    beeSize1 = Math.min(manualMaxSize, Math.max(minSize, beeSize1 + sizeChange))
+  }
+})
+
+document.addEventListener("keydown", (event) => {
+  if (event.key.toLowerCase() === "a" && !isHeartFlight) {
+    isHeartFlight = true
+    heartStartTime = Date.now()
+    heartT = 0
+    // Save current waypoints to resume later
+    waypoints1 = [...waypoints1]
+    waypoints2 = [...waypoints2]
+    trailLength = 30 // Increase for motion blur
+    trailInterval = 20 // Decrease for denser trails
+  }
 })
 
 const createTrail = (x, y, elements, beeSize) => {
   const trail = document.createElement("div")
   trail.className = "trail"
-  const trailSize = beeSize * 0.3 // Trail size is 30% of bee size
+  const trailSize = beeSize * 0.3
   trail.style.left = `${x}px`
   trail.style.top = `${y}px`
   trail.style.width = `${trailSize}px`
@@ -107,7 +132,7 @@ const createTrail = (x, y, elements, beeSize) => {
   setTimeout(() => {
     trail.remove()
     elements.splice(elements.indexOf(trail), 1)
-  }, 800)
+  }, isHeartFlight ? 400 : 800) // Shorter trail duration during heart flight
 
   if (elements.length > trailLength) {
     const oldTrail = elements.shift()
@@ -116,6 +141,7 @@ const createTrail = (x, y, elements, beeSize) => {
 }
 
 function checkCollision() {
+  if (isHeartFlight) return // Disable collisions during heart flight
   const dist = distance(beeX1, beeY1, beeX2, beeY2)
   if (dist < collisionDistance && !isBee1Stunned && !isBee2Stunned && Math.abs(beeSize1 - beeSize2) < 0.1) {
     const angle = Math.atan2(beeY2 - beeY1, beeX2 - beeX1)
@@ -140,53 +166,88 @@ function checkCollision() {
   }
 }
 
+// Parametric heart curve scaled and centered
+const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
+  const scale = 50 // Scale of the heart
+  const x = 16 * Math.pow(Math.sin(t), 3)
+  const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
+  return {
+    x: windowWidth / 2 + x * scale + offsetX,
+    y: windowHeight / 2 + y * scale + offsetY
+  }
+}
+
 function animate() {
   const currentTime = Date.now()
 
-  if (currentTime - lastMouseMove > idleTimeout) {
-    isIdle1 = true
-  }
-
-  if (isIdle1) {
-    targetX1 = waypoints1[currentWaypoint1].x
-    targetY1 = waypoints1[currentWaypoint1].y
-    if (distance(beeX1, beeY1, targetX1, targetY1) < 20) {
-      currentWaypoint1 = (currentWaypoint1 + 1) % waypoints1.length
-      if (currentWaypoint1 === 0) waypoints1 = generateWaypoints()
-      // Regenerate waypoints2 to stay near bee1 when waypoints1 is refreshed
-      waypoints2 = generateWaypoints(true, targetX1, targetY1)
+  if (isHeartFlight) {
+    const elapsed = currentTime - heartStartTime
+    if (elapsed > heartDuration) {
+      isHeartFlight = false
+      trailLength = 15 // Reset trail settings
+      trailInterval = 40
+      isIdle1 = true // Return to idle mode
+      // Regenerate waypoints
+      waypoints1 = generateWaypoints()
+      waypoints2 = generateWaypoints(true, beeX1, beeY1)
+    } else {
+      heartT += heartSpeed
+      // Bee1 follows heart path
+      const pos1 = getHeartPosition(heartT, 0, 0)
+      beeX1 = pos1.x
+      beeY1 = pos1.y
+      // Bee2 follows slightly offset heart path
+      const pos2 = getHeartPosition(heartT + Math.PI, 0, 0) // 180-degree offset
+      beeX2 = pos2.x
+      beeY2 = pos2.y
     }
-  }
+  } else {
+    if (currentTime - lastMouseMove > idleTimeout) {
+      isIdle1 = true
+    }
 
-  targetX2 = waypoints2[currentWaypoint2].x
-  targetY2 = waypoints2[currentWaypoint2].y
-  if (distance(beeX2, beeY2, targetX2, targetY2) < 20) {
-    currentWaypoint2 = (currentWaypoint2 + 1) % waypoints2.length
-    if (currentWaypoint2 === 0) waypoints2 = generateWaypoints(true, beeX1, beeY1)
+    if (isIdle1) {
+      targetX1 = waypoints1[currentWaypoint1].x
+      targetY1 = waypoints1[currentWaypoint1].y
+      if (distance(beeX1, beeY1, targetX1, targetY1) < 20) {
+        currentWaypoint1 = (currentWaypoint1 + 1) % waypoints1.length
+        if (currentWaypoint1 === 0) waypoints1 = generateWaypoints()
+        waypoints2 = generateWaypoints(true, targetX1, targetY1)
+      }
+    }
+
+    targetX2 = waypoints2[currentWaypoint2].x
+    targetY2 = waypoints2[currentWaypoint2].y
+    if (distance(beeX2, beeY2, targetX2, targetY2) < 20) {
+      currentWaypoint2 = (currentWaypoint2 + 1) % waypoints2.length
+      if (currentWaypoint2 === 0) waypoints2 = generateWaypoints(true, beeX1, beeY1)
+    }
   }
 
   const prevBeeX1 = beeX1, prevBeeY1 = beeY1
   const prevBeeX2 = beeX2, prevBeeY2 = beeY2
 
-  if (!isBee1Stunned) {
-    beeX1 += (targetX1 - beeX1) * speed
-    beeY1 += (targetY1 - beeY1) * speed
-  } else {
-    beeX1 += velocityX1
-    beeY1 += velocityY1
-    velocityX1 *= friction
-    velocityY1 *= friction
-    rotation1 += spinSpeed * (1 / 60)
-  }
-  if (!isBee2Stunned) {
-    beeX2 += (targetX2 - beeX2) * speed
-    beeY2 += (targetY2 - beeY2) * speed
-  } else {
-    beeX2 += velocityX2
-    beeY2 += velocityY2
-    velocityX2 *= friction
-    velocityY2 *= friction
-    rotation2 += spinSpeed * (1 / 60)
+  if (!isHeartFlight) {
+    if (!isBee1Stunned) {
+      beeX1 += (targetX1 - beeX1) * speed
+      beeY1 += (targetY1 - beeY1) * speed
+    } else {
+      beeX1 += velocityX1
+      beeY1 += velocityY1
+      velocityX1 *= friction
+      velocityY1 *= friction
+      rotation1 += spinSpeed * (1 / 60)
+    }
+    if (!isBee2Stunned) {
+      beeX2 += (targetX2 - beeX2) * speed
+      beeY2 += (targetY2 - beeY2) * speed
+    } else {
+      beeX2 += velocityX2
+      beeY2 += velocityY2
+      velocityX2 *= friction
+      velocityY2 *= friction
+      rotation2 += spinSpeed * (1 / 60)
+    }
   }
 
   let scaleX1 = 1, scaleX2 = 1
@@ -199,7 +260,7 @@ function animate() {
     (Math.abs(beeX1 - prevBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
     currentTime - lastTrailTime1 > trailInterval
   ) {
-    createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1) // Fixed typo: bee SaràX1 -> beeX1
+    createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1)
     lastTrailTime1 = currentTime
   }
   if (
@@ -212,12 +273,11 @@ function animate() {
 
   const dist1 = distance(beeX1, beeY1, windowWidth / 2, windowHeight / 2)
   const dist2 = distance(beeX2, beeY2, windowWidth / 2, windowHeight / 2)
-  if (isIdle1) {
-    beeSize1 = updateSize(dist1) // Revert to distance-based size when idle
+  if (isIdle1 && !isHeartFlight) {
+    beeSize1 = updateSize(dist1)
   }
   beeSize2 = updateSize(dist2)
 
-  // Update z-index based on bee size
   if (beeSize1 > beeSize2) {
     bee1.style.zIndex = 10
     bee2.style.zIndex = 5
