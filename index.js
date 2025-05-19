@@ -1,4 +1,4 @@
-    const bee1 = document.querySelector(".bee1")
+ const bee1 = document.querySelector(".bee1")
     const bee2 = document.querySelector(".bee2")
     const windowWidth = window.innerWidth
     const windowHeight = window.innerHeight
@@ -11,7 +11,7 @@
     let beeX2 = targetX2, beeY2 = targetY2
     let beeSize1 = 20, beeSize2 = 20
     let minSize = 10
-    let maxSize = 50
+    let maxSize = 150 // Increased from 50 to 150
     let rotation1 = 0, rotation2 = 0
 
     const speed = 0.05
@@ -31,7 +31,7 @@
     const spinSpeed = 360 // Degrees per second during stun
 
     let lastMouseMove = Date.now()
-    const idleTimeout = 2000 // 2 seconds of mouse inactivity triggers idle mode
+    const idleTimeout = 2000 // 2 seconds of inactivity triggers idle mode
     let isIdle1 = true // Start in idle mode for bee1
 
     let velocityX1 = 0, velocityY1 = 0
@@ -69,6 +69,16 @@
       isIdle1 = false
     })
 
+    document.addEventListener("touchmove", (event) => {
+      event.preventDefault() // Prevent scrolling/zooming
+      if (event.touches.length > 0) {
+        targetX1 = event.touches[0].clientX
+        targetY1 = event.touches[0].clientY
+        lastMouseMove = Date.now()
+        isIdle1 = false
+      }
+    }, { passive: false })
+
     const createTrail = (x, y, elements, beeSize) => {
       const trail = document.createElement("div")
       trail.className = "trail"
@@ -93,7 +103,8 @@
 
     function checkCollision() {
       const dist = distance(beeX1, beeY1, beeX2, beeY2)
-      if (dist < collisionDistance && !isBee1Stunned && !isBee2Stunned) {
+      // Only collide if bees are the same size (within a small tolerance) and not stunned
+      if (dist < collisionDistance && !isBee1Stunned && !isBee2Stunned && Math.abs(beeSize1 - beeSize2) < 0.1) {
         const angle = Math.atan2(beeY2 - beeY1, beeX2 - beeX1)
         velocityX1 = -Math.cos(angle) * bounceStrength * 0.05
         velocityY1 = -Math.sin(angle) * bounceStrength * 0.05
@@ -144,7 +155,7 @@
       const prevBeeX1 = beeX1, prevBeeY1 = beeY1
       const prevBeeX2 = beeX2, prevBeeY2 = beeY2
 
-      // Update positions
+      // the update positions
       if (!isBee1Stunned) {
         beeX1 += (targetX1 - beeX1) * speed
         beeY1 += (targetY1 - beeY1) * speed
