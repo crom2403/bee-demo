@@ -26,10 +26,10 @@ let lastTrailTime1 = 0, lastTrailTime2 = 0
 const trailElements1 = [], trailElements2 = []
 
 let isBee1Stunned = false, isBee2Stunned = false
-const stunDuration = 1500 // Increased from 1000ms to 1500ms for more spins
+const stunDuration = 1500 // 1.5 seconds for stun
 const collisionDistance = 120 // Increased for higher collision chance
 const bounceStrength = 200
-const spinSpeed = 720 // Increased from 360 to 720 deg/s for faster spinning
+const spinSpeed = 2400 // 3600 degrees / 1.5 seconds = 2400 deg/s for 10 rotations
 
 let lastMouseMove = Date.now()
 const idleTimeout = 2000 // 2 seconds of inactivity triggers idle mode
@@ -95,8 +95,7 @@ document.addEventListener("touchmove", (event) => {
       lastMouseMove = Date.now()
       isIdle1 = false
     }
-  }
-}, { passive: false })
+  }, { passive: false })
 
 document.addEventListener("wheel", (event) => {
   if (!isHeartFlight) {
@@ -110,7 +109,6 @@ document.addEventListener("keydown", (event) => {
     isHeartFlight = true
     heartStartTime = Date.now()
     heartT = 0
-    // Save current waypoints to resume later
     waypoints1 = [...waypoints1]
     waypoints2 = [...waypoints2]
     trailLength = 30 // Increase for motion blur
@@ -132,7 +130,7 @@ const createTrail = (x, y, elements, beeSize) => {
   setTimeout(() => {
     trail.remove()
     elements.splice(elements.indexOf(trail), 1)
-  }, isHeartFlight ? 400 : 800) // Shorter trail duration during heart flight
+  }, isHeartFlight ? 400 : 800)
 
   if (elements.length > trailLength) {
     const oldTrail = elements.shift()
@@ -141,7 +139,7 @@ const createTrail = (x, y, elements, beeSize) => {
 }
 
 function checkCollision() {
-  if (isHeartFlight) return // Disable collisions during heart flight
+  if (isHeartFlight) return
   const dist = distance(beeX1, beeY1, beeX2, beeY2)
   if (dist < collisionDistance && !isBee1Stunned && !isBee2Stunned && Math.abs(beeSize1 - beeSize2) < 0.1) {
     const angle = Math.atan2(beeY2 - beeY1, beeX2 - beeX1)
@@ -166,9 +164,8 @@ function checkCollision() {
   }
 }
 
-// Parametric heart curve scaled and centered
 const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
-  const scale = 50 // Scale of the heart
+  const scale = 50
   const x = 16 * Math.pow(Math.sin(t), 3)
   const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t))
   return {
@@ -184,20 +181,17 @@ function animate() {
     const elapsed = currentTime - heartStartTime
     if (elapsed > heartDuration) {
       isHeartFlight = false
-      trailLength = 15 // Reset trail settings
+      trailLength = 15
       trailInterval = 40
-      isIdle1 = true // Return to idle mode
-      // Regenerate waypoints
+      isIdle1 = true
       waypoints1 = generateWaypoints()
       waypoints2 = generateWaypoints(true, beeX1, beeY1)
     } else {
       heartT += heartSpeed
-      // Bee1 follows heart path
       const pos1 = getHeartPosition(heartT, 0, 0)
       beeX1 = pos1.x
       beeY1 = pos1.y
-      // Bee2 follows slightly offset heart path
-      const pos2 = getHeartPosition(heartT + Math.PI, 0, 0) // 180-degree offset
+      const pos2 = getHeartPosition(heartT + Math.PI, 0, 0)
       beeX2 = pos2.x
       beeY2 = pos2.y
     }
