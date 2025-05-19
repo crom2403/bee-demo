@@ -25,7 +25,7 @@ const trailInterval = 40
 let lastTrailTime1 = 0, lastTrailTime2 = 0
 const trailElements1 = [], trailElements2 = []
 
-let isBee1Stunned = false, isBee2Stunned = falsa
+let isBee1Stunned = false, isBee2Stunned = false
 const stunDuration = 1000
 const collisionDistance = 120 // Increased from 80 to 120 for higher collision chance
 const bounceStrength = 200
