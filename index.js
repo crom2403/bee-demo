@@ -44,8 +44,8 @@ const friction = 0.95; // Damping factor for bounce velocity
 // Heart-shaped flight variables
 let isHeartFlight = false;
 let heartT = 0;
-const heartSpeed = 0.3; // High speed for heart path
-const heartDuration = 2000; // 2 seconds to complete heart
+const heartSpeed = 0.1; // Reduced from 0.3 to 0.1 for slower heart animation
+const heartDuration = 6000; // Increased from 2000 to 6000 (6 seconds) to complete heart
 let heartStartTime = 0;
 
 // Generate waypoints, with bee2 waypoints often near bee1
@@ -121,28 +121,46 @@ document.addEventListener("keydown", (event) => {
     heartT = 0;
     waypoints1 = [...waypoints1];
     waypoints2 = [...waypoints2];
-    trailLength = 50; // Increased for enhanced motion blur
-    trailInterval = 10; // Decreased for denser trails
+    trailLength = 100; // Increased from 50 to 100 for longer motion blur
+    trailInterval = 5; // Decreased from 10 to 5 for denser trails
   }
 });
 
-// Create trail elements
+// Create trail elements with enhanced blur effect
 const createTrail = (x, y, elements, beeSize) => {
   const trail = document.createElement("div");
   trail.className = "trail";
-  const trailSize = beeSize * 0.3;
+  
+  // Adjust trail size for heart flight mode
+  const trailSize = isHeartFlight ? beeSize * 0.4 : beeSize * 0.3;
+  
   trail.style.left = `${x}px`;
   trail.style.top = `${y}px`;
   trail.style.width = `${trailSize}px`;
   trail.style.height = `${trailSize}px`;
+  
+  // Add blur effect for heart flight mode
+  if (isHeartFlight) {
+    trail.style.filter = "blur(3px)";
+    trail.style.opacity = "0.7"; // Slightly more visible trails
+  }
+  
   document.body.appendChild(trail);
   elements.push(trail);
 
+  // Fade out effect with longer duration for heart flight
+  const trailDuration = isHeartFlight ? 1500 : 800;
+  
   setTimeout(() => {
-    trail.remove();
-    const index = elements.indexOf(trail);
-    if (index !== -1) elements.splice(index, 1);
-  }, isHeartFlight ? 200 : 800); // Shorter duration for blur effect
+    trail.style.opacity = "0";
+    trail.style.transition = "opacity 0.5s ease-out";
+    
+    setTimeout(() => {
+      trail.remove();
+      const index = elements.indexOf(trail);
+      if (index !== -1) elements.splice(index, 1);
+    }, 500);
+  }, trailDuration - 500);
 
   if (elements.length > trailLength) {
     const oldTrail = elements.shift();
@@ -177,9 +195,9 @@ function checkCollision() {
   }
 }
 
-// Parametric heart curve, smaller and centered
+// Parametric heart curve, improved for smoother appearance
 const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
-  const scale = 30; // Reduced from 50 for smaller heart
+  const scale = 40; // Increased from 30 for slightly larger heart
   const x = 16 * Math.pow(Math.sin(t), 3);
   const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
   return {
@@ -202,6 +220,7 @@ function animate() {
       waypoints1 = generateWaypoints();
       waypoints2 = generateWaypoints(true, beeX1, beeY1);
     } else {
+      // Slower progression for heart path
       heartT += heartSpeed;
       const pos1 = getHeartPosition(heartT, 0, 0);
       beeX1 = pos1.x;
@@ -209,6 +228,18 @@ function animate() {
       const pos2 = getHeartPosition(heartT + Math.PI, 0, 0);
       beeX2 = pos2.x;
       beeY2 = pos2.y;
+      
+      // Always generate trails during heart flight, regardless of interval
+      // This ensures a continuous trail effect
+      if (currentTime - lastTrailTime1 > trailInterval) {
+        createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1);
+        lastTrailTime1 = currentTime;
+      }
+      
+      if (currentTime - lastTrailTime2 > trailInterval) {
+        createTrail(beeX2 - beeSize2 / 4, beeY2 - beeSize2 / 4, trailElements2, beeSize2);
+        lastTrailTime2 = currentTime;
+      }
     }
   } else {
     if (currentTime - lastMouseMove > idleTimeout) {
@@ -265,19 +296,22 @@ function animate() {
   if (beeX2 > prevBeeX2 + 1) scaleX2 = -1;
   else if (beeX2 < prevBeeX2 - 1) scaleX2 = 1;
 
-  if (
-    (Math.abs(beeX1 - prevBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
-    currentTime - lastTrailTime1 > trailInterval
-  ) {
-    createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1);
-    lastTrailTime1 = currentTime;
-  }
-  if (
-    (Math.abs(beeX2 - prevBeeX2) > 1 || Math.abs(beeY2 - prevBeeY2) > 1) &&
-    currentTime - lastTrailTime2 > trailInterval
-  ) {
-    createTrail(beeX2 - beeSize2 / 4, beeY2 - beeSize2 / 4, trailElements2, beeSize2);
-    lastTrailTime2 = currentTime;
+  // Create trails during normal movement
+  if (!isHeartFlight) {
+    if (
+      (Math.abs(beeX1 - prevBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
+      currentTime - lastTrailTime1 > trailInterval
+    ) {
+      createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1);
+      lastTrailTime1 = currentTime;
+    }
+    if (
+      (Math.abs(beeX2 - prevBeeX2) > 1 || Math.abs(beeY2 - prevBeeY2) > 1) &&
+      currentTime - lastTrailTime2 > trailInterval
+    ) {
+      createTrail(beeX2 - beeSize2 / 4, beeY2 - beeSize2 / 4, trailElements2, beeSize2);
+      lastTrailTime2 = currentTime;
+    }
   }
 
   const dist1 = distance(beeX1, beeY1, windowWidth / 2, windowHeight / 2);
@@ -306,5 +340,19 @@ function animate() {
 
   requestAnimationFrame(animate);
 }
+
+// Add some CSS to improve trail appearance
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+  .trail {
+    position: absolute;
+    background-color: rgba(255, 220, 0, 0.4);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+`;
+document.head.appendChild(styleElement);
 
 animate();
