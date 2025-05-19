@@ -1,0 +1,56 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #cff7ff;
+  font-family: Arial, sans-serif;
+  height: 100vh;
+}
+
+.bee {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  transform-origin: center;
+  transition: width 0.3s ease, height 0.3s ease;
+  z-index: 10;
+}
+
+.bee1 {
+  background-image: url("https://i.pinimg.com/originals/b2/1d/bd/b21dbd909e730c8dd7eea0421929eb68.gif");
+}
+
+.bee2 {
+  background-image: url("https://i.pinimg.com/originals/b2/1d/bd/b21dbd909e730c8dd7eea0421929eb68.gif");
+}
+
+.flower {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  background-image: url("https://i.pinimg.com/originals/92/78/7c/92787c838b3f9947637acbc119da0c19.gif");
+  background-size: contain;
+  background-repeat: no-repeat;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.trail {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 191, 255, 1) 0%,
+    rgba(255, 0, 0, 0.8) 40%,
+    rgba(255, 105, 180, 0.5) 60%,
+    transparent 80%
+  );
+  pointer-events: none;
+  z-index: 5;
+  transition: opacity 0.8s ease, transform 0.8s ease, width 0.8s ease, height 0.8s ease;
+}
