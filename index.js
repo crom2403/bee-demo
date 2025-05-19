@@ -15,7 +15,7 @@ let maxSize = 150 // Distance-based max size
 let manualMaxSize = 500 // Manual max size for wheel adjustment
 let rotation1 = 0, rotation2 = 0
 
-const speed = 0.05
+const speed = 0.08 // Tăng tốc độ từ 0.05 lên 0.08 để ong di chuyển nhanh hơn
 let waypoints1 = [], waypoints2 = []
 const waypointCount = 5
 let currentWaypoint1 = 0, currentWaypoint2 = 0
@@ -27,7 +27,7 @@ const trailElements1 = [], trailElements2 = []
 
 let isBee1Stunned = false, isBee2Stunned = false
 const stunDuration = 1000
-const collisionDistance = 80
+const collisionDistance = 120 // Tăng từ 80 lên 120 để tăng khả năng va chạm
 const bounceStrength = 200
 const spinSpeed = 360 // Degrees per second during stun
 
@@ -39,19 +39,27 @@ let velocityX1 = 0, velocityY1 = 0
 let velocityX2 = 0, velocityY2 = 0
 const friction = 0.95 // Damping factor for bounce velocity
 
-const generateWaypoints = () => {
+const generateWaypoints = (isBee2 = false, baseX = null, baseY = null) => {
   const waypoints = []
   for (let i = 0; i < waypointCount; i++) {
-    waypoints.push({
-      x: Math.random() * (windowWidth - 200) + 100,
-      y: Math.random() * (windowHeight - 200) + 100,
-    })
+    let x, y
+    if (isBee2 && baseX !== null && baseY !== null && Math.random() < 0.7) {
+      // 70% waypoints của ong 2 sẽ gần ong 1 (trong bán kính 300px)
+      const angle = Math.random() * 2 * Math.PI
+      const radius = Math.random() * 300
+      x = baseX + Math.cos(angle) * radius
+      y = baseY + Math.sin(angle) * radius
+    } else {
+      x = Math.random() * (windowWidth - 200) + 100
+      y = Math.random() * (windowHeight - 200) + 100
+    }
+    waypoints.push({ x, y })
   }
   return waypoints
 }
 
 waypoints1 = generateWaypoints()
-waypoints2 = generateWaypoints()
+waypoints2 = generateWaypoints(true, targetX1, targetY1) // Khởi tạo waypoints2 gần ong 1
 
 const distance = (x1, y1, x2, y2) => {
   return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
@@ -81,7 +89,6 @@ document.addEventListener("touchmove", (event) => {
 }, { passive: false })
 
 document.addEventListener("wheel", (event) => {
-  // Normalize deltaY for consistent resizing across browsers
   const sizeChange = event.deltaY < 0 ? 10 : -10 // Scroll up: +10, Scroll down: -10
   beeSize1 = Math.min(manualMaxSize, Math.max(minSize, beeSize1 + sizeChange))
 })
@@ -146,6 +153,8 @@ function animate() {
     if (distance(beeX1, beeY1, targetX1, targetY1) < 20) {
       currentWaypoint1 = (currentWaypoint1 + 1) % waypoints1.length
       if (currentWaypoint1 === 0) waypoints1 = generateWaypoints()
+      // Tái tạo waypoints2 để gần ong 1 khi waypoints1 được làm mới
+      waypoints2 = generateWaypoints(true, targetX1, targetY1)
     }
   }
 
@@ -153,7 +162,7 @@ function animate() {
   targetY2 = waypoints2[currentWaypoint2].y
   if (distance(beeX2, beeY2, targetX2, targetY2) < 20) {
     currentWaypoint2 = (currentWaypoint2 + 1) % waypoints2.length
-    if (currentWaypoint2 === 0) waypoints2 = generateWaypoints()
+    if (currentWaypoint2 === 0) waypoints2 = generateWaypoints(true, beeX1, beeY1)
   }
 
   const prevBeeX1 = beeX1, prevBeeY1 = beeY1
@@ -187,7 +196,7 @@ function animate() {
   else if (beeX2 < prevBeeX2 - 1) scaleX2 = 1
 
   if (
-    (Math.abs(beeX1 - prevBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
+    (Math.abs(beeX1 - twinsBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
     currentTime - lastTrailTime1 > trailInterval
   ) {
     createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1)
