@@ -26,7 +26,7 @@ let lastTrailTime1 = 0, lastTrailTime2 = 0
 const trailElements1 = [], trailElements2 = []
 
 let isBee1Stunned = false, isBee2Stunned = false
-const stunDuration = 1500 // 1.5 seconds for stun
+const stunDuration = 1000 // 1 seconds for stun
 const collisionDistance = 120 // Increased for higher collision chance
 const bounceStrength = 200
 const spinSpeed = 2400 // 3600 degrees / 1.5 seconds = 2400 deg/s for 10 rotations
