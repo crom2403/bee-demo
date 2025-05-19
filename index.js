@@ -208,11 +208,20 @@ function animate() {
   }
   beeSize2 = updateSize(dist2)
 
+  // Update z-index based on bee size
+  if (beeSize1 > beeSize2) {
+    bee1.style.zIndex = 10
+    bee2.style.zIndex = 5
+  } else {
+    bee1.style.zIndex = 5
+    bee2.style.zIndex = 10
+  }
+
   bee1.style.transform = `translate(${beeX1 - beeSize1 / 2}px, ${
     beeY1 - beeSize1 / 2
   }px) scaleX(${scaleX1}) rotate(${rotation1}deg)`
   bee1.style.width = `${beeSize1}px`
-  bee1.style.height = `${beeSize1}px`
+  viên
   bee2.style.transform = `translate(${beeX2 - beeSize2 / 2}px, ${
     beeY2 - beeSize2 / 2
   }px) scaleX(${scaleX2}) rotate(${rotation2}deg)`
