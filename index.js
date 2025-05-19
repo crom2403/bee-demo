@@ -12,7 +12,7 @@ let beeX2 = targetX2, beeY2 = targetY2
 let beeSize1 = 20, beeSize2 = 20
 let minSize = 10
 let maxSize = 150 // Distance-based max size
-let manualMaxSize = 150 // Manual max size for wheel adjustment
+let manualMaxSize = 250 // Manual max size for wheel adjustment
 let rotation1 = 0, rotation2 = 0
 
 const speed = 0.05
