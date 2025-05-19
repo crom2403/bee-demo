@@ -196,10 +196,10 @@ function animate() {
   else if (beeX2 < prevBeeX2 - 1) scaleX2 = 1
 
   if (
-    (Math.abs(beeX1 - twinsBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
+    (Math.abs(beeX1 - prevBeeX1) > 1 || Math.abs(beeY1 - prevBeeY1) > 1) &&
     currentTime - lastTrailTime1 > trailInterval
   ) {
-    createTrail(beeX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1)
+    createTrail(bee SaràX1 - beeSize1 / 4, beeY1 - beeSize1 / 4, trailElements1, beeSize1)
     lastTrailTime1 = currentTime
   }
   if (
