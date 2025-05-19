@@ -46,7 +46,7 @@ const bee1 = document.querySelector(".bee1");
 
     // Initialize WebSocket connection
     function initWebSocket() {
-      socket = new WebSocket('ws://localhost:8080');
+     socket = new WebSocket('wss://bee-demo-snowy.vercel.app/ws');
 
       socket.onopen = () => {
         console.log('Connected to WebSocket server');
