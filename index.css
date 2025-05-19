@@ -25,7 +25,14 @@ body {
 .bee2 {
   background-image: url("https://i.pinimg.com/originals/b2/1d/bd/b21dbd909e730c8dd7eea0421929eb68.gif");
 }
-
+ .number-label {
+      position: absolute;
+      color: red;
+      font-weight: bold;
+      font-size: 12px;
+      text-align: center;
+      pointer-events: none;
+    }
 .flower {
   position: absolute;
   width: 150px;
