@@ -11,10 +11,10 @@ let beeX1 = targetX1,
   beeY1 = targetY1
 let beeX2 = targetX2,
   beeY2 = targetY2
-let beeSize1 = 80,
-  beeSize2 = 80
-let minSize = 60
-let maxSize = 100
+let beeSize1 = 20,
+  beeSize2 = 20
+let minSize = 10
+let maxSize = 50
 let rotation1 = 0,
   rotation2 = 0
 
@@ -91,8 +91,8 @@ const createTrail = (x, y, elements) => {
   setTimeout(() => {
     trail.style.opacity = "0"
     trail.style.transform = "scale(0.2)"
-    trail.style.width = "20px"
-    trail.style.height = "20px"
+    trail.style.width = "5px"
+    trail.style.height = "5px"
     setTimeout(() => {
       trail.remove()
       elements.splice(elements.indexOf(trail), 1)
