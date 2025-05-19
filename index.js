@@ -121,8 +121,8 @@ document.addEventListener("keydown", (event) => {
     heartT = 0;
     waypoints1 = [...waypoints1];
     waypoints2 = [...waypoints2];
-    trailLength = 100; // Increased from 50 to 100 for longer motion blur
-    trailInterval = 5; // Decreased from 10 to 5 for denser trails
+    trailLength = 150; // Increased for even longer motion blur
+    trailInterval = 3; // Decreased for even denser trails
   }
 });
 
@@ -132,35 +132,36 @@ const createTrail = (x, y, elements, beeSize) => {
   trail.className = "trail";
   
   // Adjust trail size for heart flight mode
-  const trailSize = isHeartFlight ? beeSize * 0.4 : beeSize * 0.3;
+  const trailSize = isHeartFlight ? beeSize * 0.6 : beeSize * 0.3;
   
   trail.style.left = `${x}px`;
   trail.style.top = `${y}px`;
   trail.style.width = `${trailSize}px`;
   trail.style.height = `${trailSize}px`;
   
-  // Add blur effect for heart flight mode
+  // Add stronger blur effect for heart flight mode
   if (isHeartFlight) {
-    trail.style.filter = "blur(3px)";
-    trail.style.opacity = "0.7"; // Slightly more visible trails
+    trail.style.filter = "blur(5px)";
+    trail.style.opacity = "0.85"; // More visible trails
+    trail.style.background = "rgba(255, 215, 0, 0.7)"; // Brighter yellow color
   }
   
   document.body.appendChild(trail);
   elements.push(trail);
 
   // Fade out effect with longer duration for heart flight
-  const trailDuration = isHeartFlight ? 1500 : 800;
+  const trailDuration = isHeartFlight ? 2000 : 800;
   
   setTimeout(() => {
     trail.style.opacity = "0";
-    trail.style.transition = "opacity 0.5s ease-out";
+    trail.style.transition = "opacity 0.7s ease-out";
     
     setTimeout(() => {
       trail.remove();
       const index = elements.indexOf(trail);
       if (index !== -1) elements.splice(index, 1);
-    }, 500);
-  }, trailDuration - 500);
+    }, 700);
+  }, trailDuration - 700);
 
   if (elements.length > trailLength) {
     const oldTrail = elements.shift();
@@ -197,7 +198,7 @@ function checkCollision() {
 
 // Parametric heart curve, improved for smoother appearance
 const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
-  const scale = 40; // Increased from 30 for slightly larger heart
+  const scale = 20; // Reduced to 20 (half the previous size of 40)
   const x = 16 * Math.pow(Math.sin(t), 3);
   const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
   return {
@@ -346,11 +347,12 @@ const styleElement = document.createElement('style');
 styleElement.textContent = `
   .trail {
     position: absolute;
-    background-color: rgba(255, 220, 0, 0.4);
+    background-color: rgba(255, 220, 0, 0.5);
     border-radius: 50%;
     pointer-events: none;
     transform: translate(-50%, -50%);
     z-index: 1;
+    box-shadow: 0 0 8px 2px rgba(255, 220, 0, 0.3);
   }
 `;
 document.head.appendChild(styleElement);
