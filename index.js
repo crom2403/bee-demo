@@ -11,7 +11,8 @@
     let beeX2 = targetX2, beeY2 = targetY2
     let beeSize1 = 20, beeSize2 = 20
     let minSize = 10
-    let maxSize = 150 // Increased from 50 to 150
+    let maxSize = 150 // Distance-based max size
+    let manualMaxSize = 150 // Manual max size for wheel adjustment
     let rotation1 = 0, rotation2 = 0
 
     const speed = 0.05
@@ -79,6 +80,13 @@
       }
     }, { passive: false })
 
+    document.addEventListener("wheel", (event) => {
+      if (!isIdle1) { // Only adjust size when mouse is active
+        const sizeChange = event.deltaY < 0 ? 5 : -5 // Scroll up: +5, Scroll down: -5
+        beeSize1 = Math.min(manualMaxSize, Math.max(minSize, beeSize1 + sizeChange))
+      }
+    })
+
     const createTrail = (x, y, elements, beeSize) => {
       const trail = document.createElement("div")
       trail.className = "trail"
@@ -103,7 +111,6 @@
 
     function checkCollision() {
       const dist = distance(beeX1, beeY1, beeX2, beeY2)
-      // Only collide if bees are the same size (within a small tolerance) and not stunned
       if (dist < collisionDistance && !isBee1Stunned && !isBee2Stunned && Math.abs(beeSize1 - beeSize2) < 0.1) {
         const angle = Math.atan2(beeY2 - beeY1, beeX2 - beeX1)
         velocityX1 = -Math.cos(angle) * bounceStrength * 0.05
@@ -130,12 +137,10 @@
     function animate() {
       const currentTime = Date.now()
 
-      // Bee 1: Check for idle mode
       if (currentTime - lastMouseMove > idleTimeout) {
         isIdle1 = true
       }
 
-      // Update targets
       if (isIdle1) {
         targetX1 = waypoints1[currentWaypoint1].x
         targetY1 = waypoints1[currentWaypoint1].y
@@ -155,7 +160,6 @@
       const prevBeeX1 = beeX1, prevBeeY1 = beeY1
       const prevBeeX2 = beeX2, prevBeeY2 = beeY2
 
-      // the update positions
       if (!isBee1Stunned) {
         beeX1 += (targetX1 - beeX1) * speed
         beeY1 += (targetY1 - beeY1) * speed
@@ -200,7 +204,9 @@
 
       const dist1 = distance(beeX1, beeY1, windowWidth / 2, windowHeight / 2)
       const dist2 = distance(beeX2, beeY2, windowWidth / 2, windowHeight / 2)
-      beeSize1 = updateSize(dist1)
+      if (isIdle1) {
+        beeSize1 = updateSize(dist1) // Revert to distance-based size when idle
+      }
       beeSize2 = updateSize(dist2)
 
       bee1.style.transform = `translate(${beeX1 - beeSize1 / 2}px, ${
