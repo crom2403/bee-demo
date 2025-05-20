@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bee 3D Animated</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <script>
+        // Initialize scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0xffffff); // Set white background
+        document.body.appendChild(renderer.domElement);
+
+        // Add lighting for better visual effect
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(0, 1, 1);
+        scene.add(directionalLight);
+
+        // Bee body
+        const bodyGeometry = new THREE.SphereGeometry(1, 32, 32);
+        const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        scene.add(body);
+
+        // Body stripes
+        const stripeGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 32);
+        const stripeMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+        for (let i = -0.6; i <= 0.6; i += 0.4) {
+            const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+            stripe.position.set(0, i, 0);
+            scene.add(stripe);
+        }
+
+        // Stinger (sharp and long)
+        const stingerGeometry = new THREE.ConeGeometry(0.2, 1.5, 32);
+        const stingerMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+        const stinger = new THREE.Mesh(stingerGeometry, stingerMaterial);
+        stinger.position.set(0, -1.2, 0);
+        stinger.rotation.x = Math.PI;
+        scene.add(stinger);
+
+        // Larger glowing bulb at stinger base
+        const bulbGeometry = new THREE.SphereGeometry(0.35, 16, 16); // Increased radius from 0.25 to 0.35
+        const bulbMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xffff00, 
+            emissive: 0x000000, 
+            emissiveIntensity: 0 
+        });
+        const bulb = new THREE.Mesh(bulbGeometry, bulbMaterial);
+        bulb.position.set(0, -0.8, 0);
+        scene.add(bulb);
+
+        // Glowing animation for bulb
+        let isGlowing = false;
+        function animateBulb() {
+            isGlowing = !isGlowing;
+            bulbMaterial.emissive.set(isGlowing ? 0xffff00 : 0x000000);
+            bulbMaterial.emissiveIntensity = isGlowing ? 1 : 0;
+        }
+        setInterval(animateBulb, 2000);
+
+        // Enhanced eyes with sclera and pupil
+        const eyeGroup1 = new THREE.Group();
+        const eyeGroup2 = new THREE.Group();
+        const scleraGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+        const scleraMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
+        const pupilGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+        const pupilMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+
+        const sclera1 = new THREE.Mesh(scleraGeometry, scleraMaterial);
+        const pupil1 = new THREE.Mesh(pupilGeometry, pupilMaterial);
+        pupil1.position.set(0, 0, 0.15);
+        eyeGroup1.add(sclera1, pupil1);
+        eyeGroup1.position.set(-0.5, 0.5, 1);
+        scene.add(eyeGroup1);
+
+        const sclera2 = new THREE.Mesh(scleraGeometry, scleraMaterial);
+        const pupil2 = new THREE.Mesh(pupilGeometry, pupilMaterial);
+        pupil2.position.set(0, 0, 0.15);
+        eyeGroup2.add(sclera2, pupil2);
+        eyeGroup2.position.set(0.5, 0.5, 1);
+        scene.add(eyeGroup2);
+
+        // Wings
+        const wingGeometry = new THREE.CircleGeometry(0.8, 32);
+        const wingMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+        const wing1 = new THREE.Mesh(wingGeometry, wingMaterial);
+        wing1.position.set(-0.8, 0.5, 0);
+        scene.add(wing1);
+
+        const wing2 = wing1.clone();
+        wing2.position.set(0.8, 0.5, 0);
+        scene.add(wing2);
+
+        // Wing stripes
+        const wingStripeMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+        const wingStripe1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 0.1), wingStripeMaterial);
+        wingStripe1.position.set(-0.8, 0.5, 0.05);
+        scene.add(wingStripe1);
+
+        const wingStripe2 = wingStripe1.clone();
+        wingStripe2.position.set(0.8, 0.5, 0.05);
+        scene.add(wingStripe2);
+
+        // Eye animation (blink and glance)
+        let toggleBlink = true;
+        function animateEyes() {
+            toggleBlink = !toggleBlink;
+            sclera1.material.color.set(toggleBlink ? 0xffffff : 0xcccccc);
+            sclera2.material.color.set(toggleBlink ? 0xffffff : 0xcccccc);
+        }
+        setInterval(animateEyes, 800);
+
+        // Continuous side-to-side glance for pupils
+        function updateGlance() {
+            const glanceOffset = Math.sin(Date.now() * 0.002) * 0.05;
+            pupil1.position.x = glanceOffset;
+            pupil2.position.x = glanceOffset;
+        }
+
+        // Mouse interaction for eyes
+        let isDragging = false;
+        let previousMouseX = 0;
+        let mouseGlanceOffset = 0;
+        document.addEventListener('mousedown', () => { isDragging = true; });
+        document.addEventListener('mouseup', () => { isDragging = false; });
+        document.addEventListener('mousemove', (event) => {
+            if (isDragging) {
+                const mouseX = event.clientX;
+                const deltaX = mouseX - previousMouseX;
+                mouseGlanceOffset = Math.min(Math.max(mouseGlanceOffset + deltaX * 0.0005, -0.05), 0.05);
+            }
+            previousMouseX = event.clientX;
+        });
+
+        // Faster wing flapping
+        let wingSpeed = 0.6;
+        function animateWings() {
+            wing1.rotation.x = Math.sin(Date.now() * 0.05) * wingSpeed;
+            wing2.rotation.x = Math.sin(Date.now() * 0.05) * wingSpeed;
+        }
+
+        // Orbit controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.z = 5;
+
+        // Render loop
+        function animate() {
+            requestAnimationFrame(animate);
+            animateWings();
+            updateGlance();
+            pupil1.position.x += mouseGlanceOffset;
+            pupil2.position.x += mouseGlanceOffset;
+            pupil1.position.x = Math.min(Math.max(pupil1.position.x, -0.05), 0.05);
+            pupil2.position.x = Math.min(Math.max(pupil2.position.x, -0.05), 0.05);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
