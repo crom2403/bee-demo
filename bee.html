@@ -24,11 +24,15 @@
         directionalLight.position.set(0, 1, 1);
         scene.add(directionalLight);
 
+        // Create a group to hold all bee components
+        const beeGroup = new THREE.Group();
+        scene.add(beeGroup);
+
         // Bee body
         const bodyGeometry = new THREE.SphereGeometry(1, 32, 32);
         const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 });
         const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        scene.add(body);
+        beeGroup.add(body);
 
         // Body stripes
         const stripeGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 32);
@@ -36,7 +40,7 @@
         for (let i = -0.6; i <= 0.6; i += 0.4) {
             const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
             stripe.position.set(0, i, 0);
-            scene.add(stripe);
+            beeGroup.add(stripe);
         }
 
         // Stinger (sharp and long)
@@ -45,10 +49,10 @@
         const stinger = new THREE.Mesh(stingerGeometry, stingerMaterial);
         stinger.position.set(0, -1.2, 0);
         stinger.rotation.x = Math.PI;
-        scene.add(stinger);
+        beeGroup.add(stinger);
 
         // Larger glowing bulb at stinger base
-        const bulbGeometry = new THREE.SphereGeometry(0.35, 16, 16); // Increased radius from 0.25 to 0.35
+        const bulbGeometry = new THREE.SphereGeometry(0.35, 16, 16);
         const bulbMaterial = new THREE.MeshPhongMaterial({ 
             color: 0xffff00, 
             emissive: 0x000000, 
@@ -56,7 +60,7 @@
         });
         const bulb = new THREE.Mesh(bulbGeometry, bulbMaterial);
         bulb.position.set(0, -0.8, 0);
-        scene.add(bulb);
+        beeGroup.add(bulb);
 
         // Glowing animation for bulb
         let isGlowing = false;
@@ -80,44 +84,146 @@
         pupil1.position.set(0, 0, 0.15);
         eyeGroup1.add(sclera1, pupil1);
         eyeGroup1.position.set(-0.5, 0.5, 1);
-        scene.add(eyeGroup1);
+        beeGroup.add(eyeGroup1);
 
         const sclera2 = new THREE.Mesh(scleraGeometry, scleraMaterial);
         const pupil2 = new THREE.Mesh(pupilGeometry, pupilMaterial);
         pupil2.position.set(0, 0, 0.15);
         eyeGroup2.add(sclera2, pupil2);
         eyeGroup2.position.set(0.5, 0.5, 1);
-        scene.add(eyeGroup2);
+        beeGroup.add(eyeGroup2);
 
-        // Wings
-        const wingGeometry = new THREE.CircleGeometry(0.8, 32);
-        const wingMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+        // Wings with rounded tips
+        const wingShape = new THREE.Shape();
+        wingShape.moveTo(-0.3, -0.75); // Bottom left
+        wingShape.lineTo(-0.3, 0.75); // Top left
+        wingShape.quadraticCurveTo(-0.3, 0.9, 0, 0.9); // Top rounded tip
+        wingShape.lineTo(0.3, 0.75); // Top right
+        wingShape.lineTo(0.3, -0.75); // Bottom right
+        wingShape.quadraticCurveTo(0.3, -0.9, 0, -0.9); // Bottom rounded tip
+        wingShape.lineTo(-0.3, -0.75); // Close shape
+        const wingGeometry = new THREE.ShapeGeometry(wingShape);
+        const wingMaterial = new THREE.MeshPhongMaterial({ color: 0x808080, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
         const wing1 = new THREE.Mesh(wingGeometry, wingMaterial);
         wing1.position.set(-0.8, 0.5, 0);
-        scene.add(wing1);
+        wing1.rotation.z = Math.PI / 3; // Increased tilt backward
+        beeGroup.add(wing1);
 
         const wing2 = wing1.clone();
         wing2.position.set(0.8, 0.5, 0);
-        scene.add(wing2);
+        wing2.rotation.z = -Math.PI / 3; // Increased tilt backward
+        beeGroup.add(wing2);
 
         // Wing stripes
         const wingStripeMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
-        const wingStripe1 = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 0.1), wingStripeMaterial);
+        const wingStripe1 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.1), wingStripeMaterial);
         wingStripe1.position.set(-0.8, 0.5, 0.05);
-        scene.add(wingStripe1);
+        wingStripe1.rotation.z = Math.PI / 3; // Match increased wing tilt
+        beeGroup.add(wingStripe1);
 
         const wingStripe2 = wingStripe1.clone();
         wingStripe2.position.set(0.8, 0.5, 0.05);
-        scene.add(wingStripe2);
+        wingStripe2.rotation.z = -Math.PI / 3; // Match increased wing tilt
+        beeGroup.add(wingStripe2);
 
-        // Eye animation (blink and glance)
-        let toggleBlink = true;
-        function animateEyes() {
-            toggleBlink = !toggleBlink;
-            sclera1.material.color.set(toggleBlink ? 0xffffff : 0xcccccc);
-            sclera2.material.color.set(toggleBlink ? 0xffffff : 0xcccccc);
+        // Glowing bulbs (without antennae)
+        const bulbGeometry2 = new THREE.SphereGeometry(0.1, 16, 16);
+        const bulbMaterial1 = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x000000, emissiveIntensity: 0 });
+        const bulb1 = new THREE.Mesh(bulbGeometry2, bulbMaterial1);
+        bulb1.position.set(-0.3, 1.4, 0.8); // Position where antenna1 tip was
+        beeGroup.add(bulb1);
+
+        const bulbMaterial2 = new THREE.MeshPhongMaterial({ color: 0xff0000, emissive: 0x000000, emissiveIntensity: 0 });
+        const bulb2 = new THREE.Mesh(bulbGeometry2, bulbMaterial2);
+        bulb2.position.set(0.3, 1.4, 0.8); // Position where antenna2 tip was
+        beeGroup.add(bulb2);
+
+        // Point lights for glowing effect
+        const bulbLight1 = new THREE.PointLight(0xff0000, 0, 2); // Color, intensity, distance
+        bulbLight1.position.copy(bulb1.position);
+        beeGroup.add(bulbLight1);
+
+        const bulbLight2 = new THREE.PointLight(0xff0000, 0, 2); // Color, intensity, distance
+        bulbLight2.position.copy(bulb2.position);
+        beeGroup.add(bulbLight2);
+
+        // Bulb animation (blinking, color change, and glowing)
+        let isBulbGlowing = false;
+        const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00]; // Red, Green, Blue, Yellow
+        let colorIndex = 0;
+        function animateBulbs() {
+            isBulbGlowing = !isBulbGlowing;
+            const currentColor = colors[colorIndex];
+            bulbMaterial1.emissive.set(isBulbGlowing ? currentColor : 0x000000);
+            bulbMaterial1.emissiveIntensity = isBulbGlowing ? 1 : 0;
+            bulbMaterial2.emissive.set(isBulbGlowing ? currentColor : 0x000000);
+            bulbMaterial2.emissiveIntensity = isBulbGlowing ? 1 : 0;
+            bulbLight1.color.set(currentColor);
+            bulbLight1.intensity = isBulbGlowing ? 1 : 0;
+            bulbLight2.color.set(currentColor);
+            bulbLight2.intensity = isBulbGlowing ? 1 : 0;
+            colorIndex = (colorIndex + 1) % colors.length; // Cycle through colors
         }
-        setInterval(animateEyes, 800);
+        setInterval(animateBulbs, 1000); // Blink every 1 second
+
+        // Bulb sway animation (mimicking previous antennae movement)
+        let previousAzimuthalAngle = 0;
+        function animateBulbsSway() {
+            const azimuthalAngle = controls.getAzimuthalAngle();
+            const angleDelta = azimuthalAngle - previousAzimuthalAngle;
+            const swayAmplitude = 0.2; // Max sway angle in radians
+            const sway = Math.sin(Date.now() * 0.002) * swayAmplitude + angleDelta * 2; // Sway with rotation influence
+            const virtualRotation1 = Math.PI / 6 + sway; // Mimic antenna1 rotation
+            const virtualRotation2 = -Math.PI / 6 - sway; // Mimic antenna2 rotation
+            const virtualLength = 0.8; // Mimic antenna length
+            bulb1.position.set(
+                -0.3 + Math.sin(virtualRotation1) * virtualLength, // x = base x + sin(rotation) * length
+                1.0 + Math.cos(virtualRotation1) * virtualLength, // y = base y + cos(rotation) * length
+                0.8
+            );
+            bulb2.position.set(
+                0.3 + Math.sin(virtualRotation2) * virtualLength, // x = base x + sin(rotation) * length
+                1.0 + Math.cos(virtualRotation2) * virtualLength, // y = base y + cos(rotation) * length
+                0.8
+            );
+            bulbLight1.position.copy(bulb1.position);
+            bulbLight2.position.copy(bulb2.position);
+            previousAzimuthalAngle = azimuthalAngle;
+        }
+
+        // Eye animation (blink with scaling and glance)
+        let isBlinking = false;
+        let blinkProgress = 0;
+        let blinkDuration = 200; // Blink duration in ms
+        let blinkInterval = 3000; // Blink every 3 seconds
+        let lastBlinkTime = 0;
+
+        function animateEyes() {
+            const currentTime = Date.now();
+            if (!isBlinking && currentTime - lastBlinkTime > blinkInterval) {
+                isBlinking = true;
+                lastBlinkTime = currentTime;
+                blinkProgress = 0;
+            }
+
+            if (isBlinking) {
+                blinkProgress += 16; // Approx. frame time for 60fps
+                const t = Math.min(blinkProgress / blinkDuration, 1); // Normalize to 0-1
+                const scaleY = 1 - Math.sin(t * Math.PI) * 0.9; // Smoothly scale down and up
+                eyeGroup1.scale.set(1, scaleY, 1);
+                eyeGroup2.scale.set(1, scaleY, 1);
+                sclera1.material.color.set(t < 0.5 ? 0xcccccc : 0xffffff); // Gray during close, white when open
+                sclera2.material.color.set(t < 0.5 ? 0xcccccc : 0xffffff);
+
+                if (t >= 1) {
+                    isBlinking = false;
+                    eyeGroup1.scale.set(1, 1, 1); // Reset scale
+                    eyeGroup2.scale.set(1, 1, 1);
+                    sclera1.material.color.set(0xffffff);
+                    sclera2.material.color.set(0xffffff);
+                }
+            }
+        }
 
         // Continuous side-to-side glance for pupils
         function updateGlance() {
@@ -126,16 +232,29 @@
             pupil2.position.x = glanceOffset;
         }
 
-        // Mouse interaction for eyes
+        // Mouse interaction for eyes and movement
         let isDragging = false;
         let previousMouseX = 0;
         let mouseGlanceOffset = 0;
+        let mousePosition3D = new THREE.Vector3(0, 0, 0);
+        let isMouseMoving = false;
+        let lastMouseMoveTime = 0;
+
         document.addEventListener('mousedown', () => { isDragging = true; });
         document.addEventListener('mouseup', () => { isDragging = false; });
         document.addEventListener('mousemove', (event) => {
+            isMouseMoving = true;
+            lastMouseMoveTime = Date.now();
+            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            const vector = new THREE.Vector3(mouseX, mouseY, 0.5);
+            vector.unproject(camera);
+            const dir = vector.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            mousePosition3D = camera.position.clone().add(dir.multiplyScalar(distance));
+
             if (isDragging) {
-                const mouseX = event.clientX;
-                const deltaX = mouseX - previousMouseX;
+                const deltaX = event.clientX - previousMouseX;
                 mouseGlanceOffset = Math.min(Math.max(mouseGlanceOffset + deltaX * 0.0005, -0.05), 0.05);
             }
             previousMouseX = event.clientX;
@@ -144,8 +263,51 @@
         // Faster wing flapping
         let wingSpeed = 0.6;
         function animateWings() {
-            wing1.rotation.x = Math.sin(Date.now() * 0.05) * wingSpeed;
-            wing2.rotation.x = Math.sin(Date.now() * 0.05) * wingSpeed;
+            wing1.rotation.x = Math.sin(Date.now() * 0.1) * wingSpeed;
+            wing2.rotation.x = Math.sin(Date.now() * 0.1) * wingSpeed;
+        }
+
+        // Bee movement and rotation
+        let orbitRadius = 3;
+        let orbitSpeed = 0.001;
+        function animateBee() {
+            const currentTime = Date.now();
+            // Check if mouse has been inactive for 2 seconds
+            if (currentTime - lastMouseMoveTime > 2000) {
+                isMouseMoving = false;
+            }
+
+            if (isMouseMoving) {
+                // Move toward mouse position
+                const targetPosition = mousePosition3D.clone();
+                const currentPosition = beeGroup.position.clone();
+                const direction = targetPosition.sub(currentPosition).normalize();
+                const moveSpeed = 0.05;
+                beeGroup.position.add(direction.multiplyScalar(moveSpeed));
+                // Limit movement to prevent overshooting
+                if (beeGroup.position.distanceTo(targetPosition) < 0.1) {
+                    beeGroup.position.copy(targetPosition);
+                }
+                // Rotate to face mouse
+                const angle = Math.atan2(direction.x, direction.z);
+                beeGroup.rotation.y = angle;
+            } else {
+                // Circular orbit
+                const angle = Date.now() * orbitSpeed;
+                beeGroup.position.set(
+                    Math.cos(angle) * orbitRadius,
+                    0,
+                    Math.sin(angle) * orbitRadius
+                );
+                // Rotate to face direction of movement
+                const velocity = new THREE.Vector3(
+                    -Math.sin(angle) * orbitRadius * orbitSpeed,
+                    0,
+                    Math.cos(angle) * orbitRadius * orbitSpeed
+                );
+                const faceAngle = Math.atan2(velocity.x, velocity.z);
+                beeGroup.rotation.y = faceAngle + Math.PI / 2; // Adjust for bee's forward direction
+            }
         }
 
         // Orbit controls
@@ -156,6 +318,9 @@
         function animate() {
             requestAnimationFrame(animate);
             animateWings();
+            animateBulbsSway();
+            animateEyes();
+            animateBee();
             updateGlance();
             pupil1.position.x += mouseGlanceOffset;
             pupil2.position.x += mouseGlanceOffset;

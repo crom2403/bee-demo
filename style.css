@@ -43,9 +43,7 @@ body.dark-mode .bee {
   filter: drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 20px #FFD700) drop-shadow(0 0 30px #FFD700);
 }
 
-body.dark-mode .flower {
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
-}
+
 
 .number-label {
   position: absolute;
@@ -58,17 +56,18 @@ body.dark-mode .flower {
 
 .flower {
   position: absolute;
-  width: 150px;
-  height: 150px;
-  background-image: url("https://i.pinimg.com/originals/92/78/7c/92787c838b3f9947637acbc119da0c19.gif");
+  width: 50px;
+  height: 50px;
+  background-image: url("https://i.pinimg.com/originals/17/19/3f/17193fdc18a155e748f444cebf3a7e91.gif");
   background-size: contain;
   background-repeat: no-repeat;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  pointer-events: none;
   z-index: 5;
+  transform-origin: center;
 }
-
+body.dark-mode .flower {
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+}
 .trail {
   position: absolute;
   background: rgba(255, 220, 0, 0.7);

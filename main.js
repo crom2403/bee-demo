@@ -4,6 +4,31 @@ let darkModeToggle = document.querySelector("#darkModeToggle");
 let windowWidth = window.innerWidth;
 let windowHeight = window.innerHeight;
 
+// Flower management
+let flowers = []; // Array to store active flowers
+
+// Function to create a new falling flower
+const createFlower = () => {
+  const flowerElement = document.createElement("div");
+  flowerElement.className = "flower";
+  flowerElement.style.backgroundImage = 'url("https://i.pinimg.com/originals/17/19/3f/17193fdc18a155e748f444cebf3a7e91.gif")';
+  document.body.appendChild(flowerElement);
+  const x = Math.random() * (windowWidth - 40);
+  flowers.push({
+    element: flowerElement,
+    baseX: x,
+    x: x,
+    y: -40,
+    isActive: true,
+    speed: 1.5,
+    swayAmplitude: 50,
+    swayFrequency: 0.005
+  });
+};
+
+// Create new flowers every 15 seconds
+setInterval(createFlower, 15000);
+
 // Bee management
 let bees = [
   {
@@ -55,8 +80,8 @@ const avoidanceStrength = 50;
 const spinSpeed = 720; // 720 deg/s, 2 rotations in 1000ms
 const friction = 0.95;
 const minSize = 10;
-const maxSize = 150;
-const manualMaxSize = 500;
+const maxSize = 200;
+const manualMaxSize = 2000;
 let lastMouseMove = Date.now();
 const idleTimeout = 2000;
 let isIdle = true;
@@ -67,6 +92,7 @@ const heartDuration = 2000;
 let heartStartTime = 0;
 let forceCollision = false;
 let splitCount = 0; // Track 'C' presses
+const flowerRadius = 30; // Distance from flower center for bees
 
 // Generate waypoints
 const generateWaypoints = (isSecondary = false, baseX = null, baseY = null) => {
@@ -273,7 +299,7 @@ const createTrail = (x, y, elements, size) => {
 
 // Check collisions and avoidance
 const checkCollision = () => {
-  if (isHeartFlight) return;
+  if (isHeartFlight || flowers.length > 0) return; // Skip collisions when flowers are active
   for (let i = 0; i < bees.length; i++) {
     for (let j = i + 1; j < bees.length; j++) {
       const beeA = bees[i];
@@ -327,13 +353,57 @@ const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
 
 // Animation loop
 const animate = () => {
-  const currentTime = Date.now();
+  const now = Date.now();
+
+  // Update flower positions with swaying effect
+  flowers.forEach(flower => {
+    if (flower.isActive) {
+      flower.y += flower.speed;
+      // Compute swaying effect
+      const swayOffset = Math.sin(now * flower.swayFrequency) * flower.swayAmplitude;
+      flower.x = flower.baseX + swayOffset; // Update x with sway
+      flower.element.style.transform = `translate(${flower.x}px, ${flower.y}px)`;
+
+      // Remove flower when it goes off screen
+      if (flower.y > windowHeight) {
+        flower.isActive = false;
+        flower.element.remove();
+      }
+    }
+  });
+  // Remove inactive flowers
+  flowers = flowers.filter(flower => flower.isActive);
+
   // Update window dimensions
   windowWidth = window.innerWidth;
   windowHeight = window.innerHeight;
 
+  // Update bee targets
+  bees.forEach((bee, index) => {
+    if (flowers.length > 0 && !isHeartFlight) {
+      // Chase the most recent flower
+      const latestFlower = flowers[flowers.length - 1];
+      // Use the flower's current position including sway
+      const flowerX = latestFlower.x; // Includes swayOffset
+      const flowerY = latestFlower.y;
+      // Calculate unique angle for each bee (evenly spaced around the flower)
+      const angle = (index * 2 * Math.PI) / bees.length;
+      bee.targetX = flowerX + Math.cos(angle) * flowerRadius;
+      bee.targetY = flowerY + Math.sin(angle) * flowerRadius;
+      // Set bee size to 50px when chasing flower
+      bee.size = 30;
+    } else if (isIdle || index > 0) {
+      const currentWaypoint = bee.waypoints[bee.currentWaypoint];
+      bee.targetX = currentWaypoint.x;
+      bee.targetY = currentWaypoint.y;
+      if (distance(bee.x, bee.y, currentWaypoint.x, currentWaypoint.y) < 50) {
+        bee.currentWaypoint = (bee.currentWaypoint + 1) % bee.waypoints.length;
+      }
+    }
+  });
+
   if (isHeartFlight) {
-    const elapsed = currentTime - heartStartTime;
+    const elapsed = now - heartStartTime;
     if (elapsed > heartDuration) {
       isHeartFlight = false;
       trailLength = 15;
@@ -354,9 +424,9 @@ const animate = () => {
         bee.element.style.width = `${bee.size}px`;
         bee.element.style.height = `${bee.size}px`;
         bee.element.style.zIndex = 100; // High zIndex
-        if (currentTime - bee.lastTrailTime > trailInterval) {
+        if (now - bee.lastTrailTime > trailInterval) {
           createTrail(bee.x - bee.size / 4, bee.y - bee.size / 4, bee.trailElements, bee.size);
-          bee.lastTrailTime = currentTime;
+          bee.lastTrailTime = now;
         }
       });
       // Skip normal movement
@@ -367,11 +437,12 @@ const animate = () => {
   }
 
   // Normal movement
+  const currentTime = Date.now();
   if (currentTime - lastMouseMove > idleTimeout) {
     isIdle = true;
   }
   bees.forEach((bee, index) => {
-    if (index === 0 && isIdle) {
+    if (index === 0 && isIdle && flowers.length === 0) {
       bee.targetX = bee.waypoints[bee.currentWaypoint].x;
       bee.targetY = bee.waypoints[bee.currentWaypoint].y;
       if (distance(bee.x, bee.y, bee.targetX, bee.targetY) < 20) {
@@ -385,7 +456,7 @@ const animate = () => {
           });
         }
       }
-    } else if (index !== 0) {
+    } else if (index !== 0 && flowers.length === 0) {
       bee.targetX = bee.waypoints[bee.currentWaypoint].x;
       bee.targetY = bee.waypoints[bee.currentWaypoint].y;
       if (distance(bee.x, bee.y, bee.targetX, bee.targetY) < 20) {
@@ -396,8 +467,10 @@ const animate = () => {
 
     const prevX = bee.x, prevY = bee.y;
     if (!bee.isStunned && !isHeartFlight) {
-      bee.x += (bee.targetX - bee.x) * beeSpeed;
-      bee.y += (bee.targetY - bee.y) * beeSpeed;
+      // Faster movement when chasing flower
+      const speed = flowers.length > 0 ? beeSpeed * 1.5 : beeSpeed;
+      bee.x += (bee.targetX - bee.x) * speed;
+      bee.y += (bee.targetY - bee.y) * speed;
     } else if (bee.isStunned) {
       bee.x += bee.velocityX;
       bee.y += bee.velocityY;
@@ -427,7 +500,7 @@ const animate = () => {
     }
 
     const dist = distance(bee.x, bee.y, windowWidth / 2, windowHeight / 2);
-    if ((index === 0 && isIdle && !isHeartFlight) || (index !== 0 && !isHeartFlight)) {
+    if ((index === 0 && isIdle && !isHeartFlight && flowers.length === 0) || (index !== 0 && !isHeartFlight && flowers.length === 0)) {
       if (!bee.isOriginal || index !== 0) {
         bee.size = updateSize(dist);
       }
