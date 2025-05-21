@@ -11,7 +11,7 @@ let flowers = []; // Array to store active flowers
 const createFlower = () => {
   const flowerElement = document.createElement("div");
   flowerElement.className = "flower";
-  flowerElement.style.backgroundImage = 'url("https://i.pinimg.com/originals/17/19/3f/17193fdc18a155e748f444cebf3a7e91.gif")';
+  flowerElement.style.backgroundImage = 'url("https://i.pinimg.com/originals/ab/5a/0e/ab5a0e2686b7d63cc6c9cf698295de46.gif")';
   document.body.appendChild(flowerElement);
   const x = Math.random() * (windowWidth - 40);
   flowers.push({
@@ -20,7 +20,7 @@ const createFlower = () => {
     x: x,
     y: -40,
     isActive: true,
-    speed: 1.5,
+    speed: 5,
     swayAmplitude: 50,
     swayFrequency: 0.005
   });
