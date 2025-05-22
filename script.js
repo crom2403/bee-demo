@@ -145,50 +145,93 @@ const growthRate = 100;
 
 function createExplosion(x, y) {
     const baseHue = Math.random() * 360;
-    const colors = [
+    const sparkColors = [
         `hsl(${baseHue}, 100%, 70%)`,
         `hsl(${(baseHue + 30) % 360}, 100%, 70%)`,
-        `hsl(${(baseHue + 60) % 360}, 100%, 60%)`,
-        `hsl(${(baseHue - 30 + 360) % 360}, 100%, 80%)`,
-        'rgba(255, 255, 255, 0.9)'
+        `hsl(${(baseHue - 30 + 360) % 360}, 100%, 80%)`
+    ];
+    const glowColors = [
+        `hsl(${(baseHue + 60) % 360}, 80%, 60%)`,
+        `hsl(${(baseHue - 60 + 360) % 360}, 80%, 60%)`,
+        `rgba(255, 255, 255, 0.8)`
     ];
 
-    const patterns = [
-        { count: 20, radius: 1, delay: 0 },
-        { count: 15, radius: 1.5, delay: 100 },
-        { count: 10, radius: 2, delay: 200 }
+    const bursts = [
+        { count: 30, sparkSize: 4, glowSize: 12, velocity: 15, delay: 0 },
+        { count: 20, sparkSize: 3, glowSize: 10, velocity: 12, delay: 150 },
+        { count: 15, sparkSize: 2, glowSize: 8, velocity: 10, delay: 300 }
     ];
 
-    patterns.forEach((pattern, burstIndex) => {
+    bursts.forEach(burst => {
         setTimeout(() => {
-            for (let i = 0; i < pattern.count; i++) {
-                const angle = (i / pattern.count) * 360 + Math.random() * 20 - 10;
-                const velocity = (8 + Math.random() * 12) * pattern.radius;
+            // Sparks
+            for (let i = 0; i < burst.count; i++) {
+                const angle = (i / burst.count) * 360 + (Math.random() * 10 - 5);
+                const velocity = burst.velocity * (0.8 + Math.random() * 0.4);
+                const size = burst.sparkSize * (0.8 + Math.random() * 0.4);
                 const rotation = Math.random() * 360;
-                
+
                 const spark = document.createElement('div');
                 spark.className = 'particle spark';
                 spark.style.left = x + 'px';
                 spark.style.top = y + 'px';
-                
-                const sparkColor = colors[Math.floor(Math.random() * colors.length)];
-                spark.style.color = sparkColor;
-                
-                const tx = Math.cos(angle * Math.PI / 180) * velocity * 15;
-                const ty = Math.sin(angle * Math.PI / 180) * velocity * 15;
-                
+                spark.style.width = size + 'px';
+                spark.style.height = size + 'px';
+
+                const sparkColor = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+                spark.style.background = sparkColor;
+                spark.style.boxShadow = `0 0 ${size * 5}px ${size / 2}px ${sparkColor}`;
+
+                const tx = Math.cos(angle * Math.PI / 180) * velocity * 20;
+                const ty = Math.sin(angle * Math.PI / 180) * velocity * 20;
+
                 spark.style.setProperty('--tx', `${tx}px`);
                 spark.style.setProperty('--ty', `${ty}px`);
                 spark.style.setProperty('--rotation', `${rotation}deg`);
-                spark.style.setProperty('--final-scale', 0.1 + Math.random() * 0.3);
-                
-                const duration = 1.2 + Math.random() * 0.5;
-                spark.style.animation = `explode ${duration}s cubic-bezier(0.16, 1_SPELLCHECK_0.3, 1) forwards, flicker 0.2s ease-in-out infinite`;
-                
+                spark.style.setProperty('--final-scale', 0.1 + Math.random() * 0.2);
+
+                const duration = 1 + Math.random() * 0.5;
+                spark.style.animation = `explode ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards, flicker 0.15s ease-in-out infinite`;
+
+                spark.style.zIndex = '1000';
                 document.body.appendChild(spark);
                 setTimeout(() => spark.remove(), duration * 1000);
             }
-        }, pattern.delay);
+
+            // Glows
+            for (let i = 0; i < Math.floor(burst.count / 2); i++) {
+                const angle = (i / (burst.count / 2)) * 360 + (Math.random() * 15 - 7.5);
+                const velocity = burst.velocity * (0.6 + Math.random() * 0.3);
+                const size = burst.glowSize * (0.8 + Math.random() * 0.4);
+                const rotation = Math.random() * 360;
+
+                const glow = document.createElement('div');
+                glow.className = 'particle glow';
+                glow.style.left = x + 'px';
+                glow.style.top = y + 'px';
+                glow.style.width = size + 'px';
+                glow.style.height = size + 'px';
+
+                const glowColor = glowColors[Math.floor(Math.random() * glowColors.length)];
+                glow.style.background = `radial-gradient(circle at center, ${glowColor} 0%, transparent 70%)`;
+                glow.style.filter = 'blur(2px)';
+
+                const tx = Math.cos(angle * Math.PI / 180) * velocity * 15;
+                const ty = Math.sin(angle * Math.PI / 180) * velocity * 15;
+
+                glow.style.setProperty('--tx', `${tx}px`);
+                glow.style.setProperty('--ty', `${ty}px`);
+                glow.style.setProperty('--rotation', `${rotation}deg`);
+                glow.style.setProperty('--final-scale', 0.2 + Math.random() * 0.3);
+
+                const duration = 1.2 + Math.random() * 0.6;
+                glow.style.animation = `explode ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
+
+                glow.style.zIndex = '999';
+                document.body.appendChild(glow);
+                setTimeout(() => glow.remove(), duration * 1000);
+            }
+        }, burst.delay);
     });
 }
 
