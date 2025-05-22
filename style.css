@@ -35,6 +35,20 @@ body.dark-mode .dark-overlay {
     z-index: 10;
 }
 
+.bee.captured {
+    filter: brightness(0.8);
+    animation: float-in-bubble 2s ease-in-out infinite;
+}
+
+@keyframes float-in-bubble {
+    0%, 100% {
+        transform: translate(0, 0);
+    }
+    50% {
+        transform: translate(0, -5px);
+    }
+}
+
 .bee1,
 .bee2 {
     background-image: url("https://i.pinimg.com/originals/b2/1d/bd/b21dbd909e730c8dd7eea0421929eb68.gif");
@@ -46,17 +60,206 @@ body.dark-mode .bee {
 
 .number-label {
     position: absolute;
-    color: red;
+    color: #ffd700;
     font-weight: bold;
-    font-size: 12px;
-    text-align: center;
+    font-size: 16px;
+    text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8);
     pointer-events: none;
+    z-index: 1000;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-align: center;
+    transform-origin: center;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    backdrop-filter: blur(2px);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, 
+        rgba(255, 255, 255, 0.9) 5%,
+        rgba(255, 255, 255, 0.5) 15%,
+        rgba(173, 216, 230, 0.3) 40%,
+        rgba(173, 216, 230, 0.2) 80%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    box-shadow: 
+        inset -5px -5px 15px rgba(0, 0, 0, 0.1),
+        inset 5px 5px 15px rgba(255, 255, 255, 0.4),
+        0 0 10px rgba(255, 255, 255, 0.2);
+    animation: float 3s ease-in-out infinite alternate;
+    backdrop-filter: blur(1px);
+}
+
+.bubble::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 15%;
+    width: 25%;
+    height: 25%;
+    background: radial-gradient(circle at center, 
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.4) 60%,
+        transparent 100%);
+    border-radius: 50%;
+    transform: rotate(-40deg);
+}
+
+.bubble::before {
+    content: '';
+    position: absolute;
+    top: 30%;
+    left: 30%;
+    width: 15%;
+    height: 15%;
+    background: radial-gradient(circle at center, 
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.4) 60%,
+        transparent 100%);
+    border-radius: 50%;
+    transform: rotate(20deg);
+}
+
+@keyframes grow {
+    0% {
+        transform: translate(-50%, -50%) scale(0.2);
+        opacity: 0;
+    }
+    20% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+    }
+}
+
+@keyframes float {
+    0% {
+        transform: translate(-50%, -50%) translateY(0) translateX(0);
+    }
+    50% {
+        transform: translate(-50%, -50%) translateY(-15px) translateX(10px);
+    }
+    100% {
+        transform: translate(-50%, -50%) translateY(-30px) translateX(-10px);
+    }
+}
+
+.bubble-pop {
+    animation: pop 0.3s ease-out forwards;
+}
+
+.particle {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.spark {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    transform-origin: center;
+    background: currentColor;
+    box-shadow: 0 0 20px 4px currentColor;
+}
+
+.trail {
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to top, transparent, currentColor, transparent);
+    transform-origin: bottom center;
+}
+
+.glow {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center,
+        rgba(255, 255, 255, 0.8) 0%,
+        currentColor 20%,
+        transparent 70%);
+    filter: blur(2px);
+}
+
+.dark-mode .particle {
+    filter: brightness(1.8) contrast(1.5);
+}
+
+@keyframes explode {
+    0% {
+        transform: translate(-50%, -50%) scale(0.1) rotate(var(--rotation));
+        opacity: 0;
+    }
+    15% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.9;
+    }
+    100% {
+        transform: translate(var(--tx), var(--ty)) rotate(var(--rotation)) scale(var(--final-scale, 0));
+        opacity: 0;
+    }
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes rise {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(-50%, calc(-50% - 100px)) scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes trail {
+    0% {
+        width: 0;
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        width: var(--trail-length);
+        opacity: 0;
+    }
+}
+
+@keyframes pop {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.5;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
 }
 
 .flower {
     position: absolute;
-    width: 40px;
-    height: 40px;
+    width: 100px;
+    height: 100px;
     background-size: contain;
     background-repeat: no-repeat;
     transform-origin: center;
@@ -101,11 +304,11 @@ body.dark-mode .flower {
 .switch {
     position: fixed;
     right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 20px;
     display: inline-block;
-    width: 60px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
+    z-index: 1000;
 }
 
 .switch input {
@@ -121,24 +324,49 @@ body.dark-mode .flower {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
+    background-color: transparent;
     transition: 0.4s;
-    border-radius: 34px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .slider i {
-    color: #ffd700; /* Bright yellow when light mode */
-    font-size: 20px;
-    transition: color 0.4s;
+    color: #ffd700;
+    font-size: 24px;
+    transition: all 0.4s;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.2));
 }
 
+/* Light mode (unchecked) - bulb is off */
+.slider i {
+    opacity: 0.5;
+    text-shadow: none;
+}
+
+/* Dark mode (checked) - bulb is glowing */
 input:checked + .slider i {
-    color: #555; /* Gray when dark mode */
+    color: #fff700;
+    opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8))
+           drop-shadow(0 0 10px rgba(255, 215, 0, 0.6))
+           drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+    text-shadow: 0 0 10px #fff700,
+                 0 0 20px #fff700,
+                 0 0 30px #fff700;
+    animation: glow 2s ease-in-out infinite alternate;
 }
 
-input:checked + .slider {
-    background-color: #2196f3;
+@keyframes glow {
+    from {
+        filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8))
+               drop-shadow(0 0 10px rgba(255, 215, 0, 0.6))
+               drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+    }
+    to {
+        filter: drop-shadow(0 0 7px rgba(255, 215, 0, 0.9))
+               drop-shadow(0 0 14px rgba(255, 215, 0, 0.7))
+               drop-shadow(0 0 21px rgba(255, 215, 0, 0.5));
+    }
 }

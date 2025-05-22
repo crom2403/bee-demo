@@ -1,16 +1,16 @@
 let bee1 = document.querySelector(".bee1");
 let bee2 = document.querySelector(".bee2");
+let number1 = document.querySelector(".number1");
+let number2 = document.querySelector(".number2");
 let darkModeToggle = document.querySelector("#darkModeToggle");
 let windowWidth = window.innerWidth;
 let windowHeight = window.innerHeight;
 
 // Flower management
-let flowers = []; // Array to store active flower (only one at a time)
-let lastFlowerDisappearTime = 0; // Time when last flower disappeared
+let flowers = [];
+let lastFlowerDisappearTime = 0;
 
-// Function to create a new falling flower
 const createFlower = () => {
-    // Remove existing flower if present
     flowers.forEach(flower => {
         flower.element.remove();
         flower.isActive = false;
@@ -30,20 +30,19 @@ const createFlower = () => {
         velocityX: 0,
         velocityY: 0,
         isActive: true,
-        speed: 1, // Halved from 2 for twice slower fall
+        speed: 1,
         swayAmplitude: 50,
         swayFrequency: 0.005
     });
 };
 
-// Check if a new flower can be created every 30 seconds
 setInterval(() => {
     const now = Date.now();
     if (flowers.length === 0 && (lastFlowerDisappearTime === 0 || now - lastFlowerDisappearTime >= 30000)) {
         createFlower();
     }
 }, 30000);
-createFlower(); // Create initial flower
+createFlower();
 
 // Bee management
 let bees = [
@@ -58,6 +57,8 @@ let bees = [
         velocityX: 0,
         velocityY: 0,
         isStunned: false,
+        isFalling: false,
+        isFlipped: false,
         waypoints: [],
         currentWaypoint: 0,
         trailElements: [],
@@ -75,6 +76,8 @@ let bees = [
         velocityX: 0,
         velocityY: 0,
         isStunned: false,
+        isFalling: false,
+        isFlipped: false,
         waypoints: [],
         currentWaypoint: 0,
         trailElements: [],
@@ -111,7 +114,9 @@ let splitCount = 0;
 const flowerRadius = 30;
 const flowerHitRadius = 60;
 const flowerBounceStrength = 4;
-const gravity = 0.05; // Halved from 0.1 for twice slower fall
+const gravity = 0.05;
+const jumpVelocity = -10;
+const fastFallGravity = 0.2;
 
 // Generate waypoints
 const generateWaypoints = (isSecondary = false, baseX = null, baseY = null) => {
@@ -132,23 +137,227 @@ const generateWaypoints = (isSecondary = false, baseX = null, baseY = null) => {
     return waypoints;
 };
 
-// Initialize waypoints
+// Bubble management
+let bubbles = [];
+const minBubbleSize = 20;
+const maxBubbleSize = 200;
+const growthRate = 100;
+
+function createExplosion(x, y) {
+    const baseHue = Math.random() * 360;
+    const colors = [
+        `hsl(${baseHue}, 100%, 70%)`,
+        `hsl(${(baseHue + 30) % 360}, 100%, 70%)`,
+        `hsl(${(baseHue + 60) % 360}, 100%, 60%)`,
+        `hsl(${(baseHue - 30 + 360) % 360}, 100%, 80%)`,
+        'rgba(255, 255, 255, 0.9)'
+    ];
+
+    const patterns = [
+        { count: 20, radius: 1, delay: 0 },
+        { count: 15, radius: 1.5, delay: 100 },
+        { count: 10, radius: 2, delay: 200 }
+    ];
+
+    patterns.forEach((pattern, burstIndex) => {
+        setTimeout(() => {
+            for (let i = 0; i < pattern.count; i++) {
+                const angle = (i / pattern.count) * 360 + Math.random() * 20 - 10;
+                const velocity = (8 + Math.random() * 12) * pattern.radius;
+                const rotation = Math.random() * 360;
+                
+                const spark = document.createElement('div');
+                spark.className = 'particle spark';
+                spark.style.left = x + 'px';
+                spark.style.top = y + 'px';
+                
+                const sparkColor = colors[Math.floor(Math.random() * colors.length)];
+                spark.style.color = sparkColor;
+                
+                const tx = Math.cos(angle * Math.PI / 180) * velocity * 15;
+                const ty = Math.sin(angle * Math.PI / 180) * velocity * 15;
+                
+                spark.style.setProperty('--tx', `${tx}px`);
+                spark.style.setProperty('--ty', `${ty}px`);
+                spark.style.setProperty('--rotation', `${rotation}deg`);
+                spark.style.setProperty('--final-scale', 0.1 + Math.random() * 0.3);
+                
+                const duration = 1.2 + Math.random() * 0.5;
+                spark.style.animation = `explode ${duration}s cubic-bezier(0.16, 1_SPELLCHECK_0.3, 1) forwards, flicker 0.2s ease-in-out infinite`;
+                
+                document.body.appendChild(spark);
+                setTimeout(() => spark.remove(), duration * 1000);
+            }
+        }, pattern.delay);
+    });
+}
+
+let isCreatingBubble = false;
+let currentBubble = null;
+let bubbleStartTime = 0;
+
+document.addEventListener('mousedown', (event) => {
+    isCreatingBubble = true;
+    bubbleStartTime = Date.now();
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.style.left = event.clientX + 'px';
+    bubble.style.top = event.clientY + 'px';
+    
+    bubble.style.width = minBubbleSize + 'px';
+    bubble.style.height = minBubbleSize + 'px';
+    
+    const hue = Math.random() * 360;
+    bubble.style.background = `radial-gradient(circle at 30% 30%, 
+        rgba(255, 255, 255, 0.9) 5%,
+        rgba(255, 255, 255, 0.5) 15%,
+        hsla(${hue}, 70%, 70%, 0.3) 40%,
+        hsla(${hue}, 70%, 70%, 0.2) 80%)`;
+    
+    document.body.appendChild(bubble);
+
+    currentBubble = {
+        element: bubble,
+        x: event.clientX,
+        y: event.clientY,
+        size: minBubbleSize,
+        velocityX: 0,
+        velocityY: 0,
+        popped: false,
+        hue: hue
+    };
+});
+
+document.addEventListener('mouseup', () => {
+    if (isCreatingBubble && currentBubble) {
+        isCreatingBubble = false;
+        
+        const sizeRatio = (currentBubble.size - minBubbleSize) / (maxBubbleSize - minBubbleSize);
+        currentBubble.velocityX = (Math.random() - 0.5) * 2 * (1 + sizeRatio);
+        currentBubble.velocityY = -Math.random() * 2 - 1 - sizeRatio;
+        
+        bubbles.push(currentBubble);
+        currentBubble = null;
+    }
+});
+
+document.addEventListener('mousemove', (event) => {
+    if (isCreatingBubble && currentBubble) {
+        const holdTime = Date.now() - bubbleStartTime;
+        const newSize = Math.min(maxBubbleSize, minBubbleSize + (holdTime / 1000) * growthRate);
+        
+        currentBubble.size = newSize;
+        currentBubble.x = event.clientX;
+        currentBubble.y = event.clientY;
+        
+        currentBubble.element.style.width = newSize + 'px';
+        currentBubble.element.style.height = newSize + 'px';
+        currentBubble.element.style.left = event.clientX + 'px';
+        currentBubble.element.style.top = event.clientY + 'px';
+    }
+});
+
+document.addEventListener('keydown', (event) => {
+    if (event.key.toLowerCase() === 'z') {
+        bubbles.forEach(bubble => {
+            if (!bubble.popped) {
+                createExplosion(bubble.x, bubble.y);
+                bubble.element.remove();
+            }
+        });
+        bubbles = [];
+    }
+});
+
+function checkBubbleCollisions() {
+    bubbles.forEach((bubble1, index1) => {
+        if (bubble1.popped) return;
+
+        bubble1.x += bubble1.velocityX;
+        bubble1.y += bubble1.velocityY;
+
+        if (bubble1.x - bubble1.size/2 < 0 || bubble1.x + bubble1.size/2 > windowWidth) {
+            bubble1.velocityX *= -0.8;
+            bubble1.x = Math.max(bubble1.size/2, Math.min(windowWidth - bubble1.size/2, bubble1.x));
+        }
+        if (bubble1.y - bubble1.size/2 < 0 || bubble1.y + bubble1.size/2 > windowHeight) {
+            bubble1.velocityY *= -0.8;
+            bubble1.y = Math.max(bubble1.size/2, Math.min(windowHeight - bubble1.size/2, bubble1.y));
+        }
+
+        bubbles.forEach((bubble2, index2) => {
+            if (index1 !== index2 && !bubble2.popped) {
+                const dx = bubble2.x - bubble1.x;
+                const dy = bubble2.y - bubble1.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = (bubble1.size + bubble2.size) / 2;
+
+                if (distance < minDistance) {
+                    const angle = Math.atan2(dy, dx);
+                    const targetX = bubble1.x + Math.cos(angle) * minDistance;
+                    const targetY = bubble1.y + Math.sin(angle) * minDistance;
+                    
+                    const ax = (targetX - bubble2.x) * 0.05;
+                    const ay = (targetY - bubble2.y) * 0.05;
+                    
+                    const tempVx = bubble1.velocityX;
+                    const tempVy = bubble1.velocityY;
+                    
+                    bubble1.velocityX = bubble2.velocityX * 0.8 + (Math.random() - 0.5) * 0.5;
+                    bubble1.velocityY = bubble2.velocityY * 0.8 + (Math.random() - 0.5) * 0.5;
+                    bubble2.velocityX = tempVx * 0.8 + (Math.random() - 0.5) * 0.5;
+                    bubble2.velocityY = tempVy * 0.8 + (Math.random() - 0.5) * 0.5;
+                    
+                    bubble1.velocityX -= ax;
+                    bubble1.velocityY -= ay;
+                    bubble2.velocityX += ax;
+                    bubble2.velocityY += ay;
+                }
+            }
+        });
+
+        bubble1.velocityY += gravity;
+        bubble1.velocityX *= 0.995;
+        bubble1.velocityY *= 0.995;
+
+        bubble1.element.style.left = bubble1.x + 'px';
+        bubble1.element.style.top = bubble1.y + 'px';
+
+        bees.forEach(bee => {
+            const dx = bee.x - bubble1.x;
+            const dy = bee.y - bubble1.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < (bee.size / 2 + bubble1.size / 2) * 0.8) {
+                createExplosion(bubble1.x, bubble1.y);
+                bubble1.element.classList.add('bubble-pop');
+                bubble1.popped = true;
+
+                setTimeout(() => {
+                    if (bubble1.element.parentNode) {
+                        document.body.removeChild(bubble1.element);
+                        bubbles = bubbles.filter(b => b !== bubble1);
+                    }
+                }, 300);
+            }
+        });
+    });
+}
+
 bees[0].waypoints = generateWaypoints();
 bees[1].waypoints = generateWaypoints(true, bees[0].targetX, bees[0].targetY);
 
-// Calculate distance
 const distance = (x1, y1, x2, y2) => {
     return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 };
 
-// Update size based on distance from center
 const updateSize = (dist) => {
     const maxDistance = Math.sqrt(windowWidth * windowWidth + windowHeight * windowHeight) / 2;
     const size = maxSize - (dist / maxDistance) * (maxSize - minSize);
     return Math.max(minSize, size);
 };
 
-// Create new bee
 const createBee = (parentBee) => {
     const element = document.createElement("div");
     element.className = "bee";
@@ -167,6 +376,8 @@ const createBee = (parentBee) => {
         velocityX: 0,
         velocityY: 0,
         isStunned: false,
+        isFalling: false,
+        isFlipped: false,
         waypoints: generateWaypoints(true, parentBee.x, parentBee.y),
         currentWaypoint: 0,
         trailElements: [],
@@ -175,9 +386,8 @@ const createBee = (parentBee) => {
     };
 };
 
-// Event listeners
 document.addEventListener("mousemove", (event) => {
-    if (!isHeartFlight) {
+    if (!isHeartFlight && !bees[0].isFalling) {
         bees[0].targetX = event.clientX;
         bees[0].targetY = event.clientY;
         lastMouseMove = Date.now();
@@ -186,7 +396,7 @@ document.addEventListener("mousemove", (event) => {
 });
 
 document.addEventListener("touchmove", (event) => {
-    if (!isHeartFlight) {
+    if (!isHeartFlight && !bees[0].isFalling) {
         event.preventDefault();
         if (event.touches.length > 0) {
             bees[0].targetX = event.touches[0].clientX;
@@ -198,7 +408,7 @@ document.addEventListener("touchmove", (event) => {
 }, { passive: false });
 
 document.addEventListener("wheel", (event) => {
-    if (!isHeartFlight) {
+    if (!isHeartFlight && !bees[0].isFalling) {
         const sizeChange = event.deltaY < 0 ? 10 : -10;
         bees[0].size = Math.min(manualMaxSize, Math.max(minSize, bees[0].size + sizeChange));
     }
@@ -216,6 +426,8 @@ document.addEventListener("keydown", (event) => {
             bee.velocityX = 0;
             bee.velocityY = 0;
             bee.isStunned = false;
+            bee.isFalling = false;
+            bee.isFlipped = false;
         });
         trailLength = 20;
         trailInterval = 10;
@@ -226,6 +438,8 @@ document.addEventListener("keydown", (event) => {
             bee.size = 80;
             bee.targetX = bee.x;
             bee.targetY = bee.y;
+            bee.isFalling = false;
+            bee.isFlipped = false;
         });
         forceCollision = true;
     } else if (key === "c" && !isHeartFlight && splitCount < 3) {
@@ -237,7 +451,27 @@ document.addEventListener("keydown", (event) => {
         bees = bees.concat(newBees);
         splitCount++;
     } else if (key === "d") {
-        createFlower(); // Create a new flower immediately when 'D' is pressed
+        createFlower();
+    } else if (key === "e" && !isHeartFlight) {
+        bees.forEach(bee => {
+            if (!bee.isStunned) {
+                bee.isFalling = true;
+                bee.isFlipped = true;
+                bee.velocityX = 0;
+                bee.velocityY = 0;
+                bee.rotation = 0;
+            }
+        });
+    } else if (key === "f" && !isHeartFlight) {
+        bees.forEach(bee => {
+            if (!bee.isStunned) {
+                bee.isFalling = true;
+                bee.isFlipped = false;
+                bee.velocityY = jumpVelocity;
+                bee.velocityX = 0;
+                bee.rotation = 0;
+            }
+        });
     } else if (key === "z" && !isHeartFlight) {
         bees.forEach(bee => {
             if (!bee.isOriginal) bee.element.remove();
@@ -254,6 +488,8 @@ document.addEventListener("keydown", (event) => {
                 velocityX: 0,
                 velocityY: 0,
                 isStunned: false,
+                isFalling: false,
+                isFlipped: false,
                 waypoints: generateWaypoints(),
                 currentWaypoint: 0,
                 trailElements: [],
@@ -271,6 +507,8 @@ document.addEventListener("keydown", (event) => {
                 velocityX: 0,
                 velocityY: 0,
                 isStunned: false,
+                isFalling: false,
+                isFlipped: false,
                 waypoints: generateWaypoints(true, windowWidth / 2, windowHeight / 2),
                 currentWaypoint: 0,
                 trailElements: [],
@@ -286,7 +524,6 @@ darkModeToggle.addEventListener("change", () => {
     document.body.classList.toggle("dark-mode", darkModeToggle.checked);
 });
 
-// Create trail elements
 const createTrail = (x, y, elements, size) => {
     const trail = document.createElement("div");
     trail.className = "trail";
@@ -318,7 +555,6 @@ const createTrail = (x, y, elements, size) => {
     }
 };
 
-// Check collisions and avoidance
 const checkCollision = () => {
     if (isHeartFlight) return;
     for (let i = 0; i < bees.length; i++) {
@@ -334,14 +570,18 @@ const checkCollision = () => {
                 beeB.velocityY = Math.sin(angle) * bounceStrength * 0.05;
                 beeA.isStunned = true;
                 beeB.isStunned = true;
+                beeA.isFalling = false;
+                beeA.isFlipped = false;
+                beeB.isFalling = false;
+                beeB.isFlipped = false;
                 setTimeout(() => {
                     beeA.isStunned = false;
                     beeB.isStunned = false;
                     beeA.rotation = 0;
                     beeB.rotation = 0;
                     beeA.velocityX = 0;
-                    beeA.velocityY = 0;
                     beeB.velocityX = 0;
+                    beeA.velocityY = 0;
                     beeB.velocityY = 0;
                 }, stunDuration);
             }
@@ -357,13 +597,12 @@ const checkCollision = () => {
     forceCollision = false;
 };
 
-// Check bee-flower collision
 const checkBeeFlowerCollision = () => {
     if (flowers.length === 0 || isHeartFlight) return;
     const bee = bees[0];
     const flower = flowers[0];
     const dist = distance(bee.x, bee.y, flower.x, flower.y);
-    if (dist < flowerHitRadius && !bee.isStunned) {
+    if (dist < flowerHitRadius && !bee.isStunned && !bee.isFalling) {
         const dx = bee.x - flower.x;
         const dy = bee.y - flower.y;
         const magnitude = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -374,9 +613,8 @@ const checkBeeFlowerCollision = () => {
     }
 };
 
-// Heart-shaped path
 const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
-    const scale = 20;
+    const scale = 20 * 0.8;
     const x = 16 * Math.pow(Math.sin(t), 3);
     const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
     let posX = windowWidth / 2 + x * scale + offsetX;
@@ -386,11 +624,9 @@ const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
     return { x: posX, y: posY };
 };
 
-// Animation loop
 const animate = () => {
     const now = Date.now();
 
-    // Update flower position with physics
     flowers.forEach(flower => {
         if (flower.isActive) {
             flower.x += flower.velocityX;
@@ -406,18 +642,16 @@ const animate = () => {
                 flower.isActive = false;
                 flower.element.remove();
                 flowers = [];
-                lastFlowerDisappearTime = now; // Record disappearance time
+                lastFlowerDisappearTime = now;
             }
         }
     });
 
-    // Update window dimensions
     windowWidth = window.innerWidth;
     windowHeight = window.innerHeight;
 
-    // Update bee targets
     bees.forEach((bee, index) => {
-        if (flowers.length > 0 && !isHeartFlight && index !== 0) {
+        if (flowers.length > 0 && !isHeartFlight && index !== 0 && !bee.isFalling) {
             const latestFlower = flowers[0];
             const flowerX = latestFlower.x;
             const flowerY = latestFlower.y;
@@ -425,7 +659,7 @@ const animate = () => {
             bee.targetX = flowerX + Math.cos(angle) * flowerRadius;
             bee.targetY = flowerY + Math.sin(angle) * flowerRadius;
             bee.size = 30;
-        } else if (isIdle || index > 0) {
+        } else if ((isIdle || index > 0) && !isHeartFlight && !bee.isFalling) {
             const currentWaypoint = bee.waypoints[bee.currentWaypoint];
             bee.targetX = currentWaypoint.x;
             bee.targetY = currentWaypoint.y;
@@ -438,6 +672,8 @@ const animate = () => {
         }
     });
 
+    checkBubbleCollisions();
+
     if (isHeartFlight) {
         const elapsed = now - heartStartTime;
         if (elapsed > heartDuration) {
@@ -447,6 +683,8 @@ const animate = () => {
             isIdle = true;
             bees.forEach(bee => {
                 bee.waypoints = generateWaypoints(!bee.isOriginal, bee.x, bee.y);
+                bee.isFalling = false;
+                bee.isFlipped = false;
             });
         } else {
             heartT += heartSpeed;
@@ -464,20 +702,18 @@ const animate = () => {
                     bee.lastTrailTime = now;
                 }
             });
-            checkCollision();
             requestAnimationFrame(animate);
             return;
         }
     }
 
-    // Normal movement
     const currentTime = Date.now();
     if (currentTime - lastMouseMove > idleTimeout) {
         isIdle = true;
     }
     bees.forEach((bee, index) => {
         const prevX = bee.x, prevY = bee.y;
-        if (!bee.isStunned && !isHeartFlight) {
+        if (!bee.isStunned && !isHeartFlight && !bee.isFalling) {
             const speed = flowers.length > 0 && index !== 0 ? beeSpeed * 1.5 : beeSpeed;
             bee.x += (bee.targetX - bee.x) * speed;
             bee.y += (bee.targetY - bee.y) * speed;
@@ -487,6 +723,29 @@ const animate = () => {
             bee.velocityX *= friction;
             bee.velocityY *= friction;
             bee.rotation += spinSpeed * (1 / 60);
+        } else if (bee.isFalling) {
+            bee.x += bee.velocityX;
+            bee.y += bee.velocityY;
+            if (bee.velocityY < 0) {
+                bee.velocityY += gravity;
+                if (bee.y < bee.size / 2) {
+                    bee.y = bee.size / 2;
+                    bee.velocityY = 0;
+                }
+            } else {
+                bee.velocityY += fastFallGravity;
+            }
+            bee.velocityX *= friction;
+            if (bee.y > windowHeight - bee.size / 2) {
+                bee.y = windowHeight - bee.size / 2;
+                bee.velocityY = 0;
+                bee.isFalling = false;
+                bee.isFlipped = false;
+            }
+            if (bee.x < bee.size / 2 || bee.x > windowWidth - bee.size / 2) {
+                bee.velocityX *= -0.8;
+                bee.x = Math.max(bee.size / 2, Math.min(windowWidth - bee.size / 2, bee.x));
+            }
         }
 
         if (!isHeartFlight) {
@@ -509,14 +768,16 @@ const animate = () => {
         }
 
         const dist = distance(bee.x, bee.y, windowWidth / 2, windowHeight / 2);
-        if ((index === 0 && isIdle && !isHeartFlight && flowers.length === 0) || (index !== 0 && !isHeartFlight && flowers.length === 0)) {
+        if ((index === 0 && isIdle && !isHeartFlight && flowers.length === 0 && !bee.isFalling) || 
+            (index !== 0 && !isHeartFlight && flowers.length === 0 && !bee.isFalling)) {
             if (!bee.isOriginal || index !== 0) {
                 bee.size = updateSize(dist);
             }
         }
 
+        const flipTransform = bee.isFlipped ? ' rotateZ(180deg)' : '';
         bee.element.style.zIndex = Math.round(bee.size);
-        bee.element.style.transform = `translate(${bee.x - bee.size / 2}px, ${bee.y - bee.size / 2}px) scaleX(${scaleX}) rotate(${bee.rotation}deg)`;
+        bee.element.style.transform = `translate(${bee.x - bee.size / 2}px, ${bee.y - bee.size / 2}px) scaleX(${scaleX}) rotate(${bee.rotation}deg)${flipTransform}`;
         bee.element.style.width = `${bee.size}px`;
         bee.element.style.height = `${bee.size}px`;
     });
