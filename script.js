@@ -142,6 +142,7 @@ let bubbles = [];
 const minBubbleSize = 20;
 const maxBubbleSize = 200;
 const growthRate = 100;
+let bubbleCounter = 1; // Tracks bubble numbers internally
 
 function createExplosion(x, y) {
     const baseHue = Math.random() * 360;
@@ -262,6 +263,7 @@ document.addEventListener('mousedown', (event) => {
 
     currentBubble = {
         element: bubble,
+        number: bubbleCounter,
         x: event.clientX,
         y: event.clientY,
         size: minBubbleSize,
@@ -270,12 +272,29 @@ document.addEventListener('mousedown', (event) => {
         popped: false,
         hue: hue
     };
+
+    bubbleCounter++;
 });
 
 document.addEventListener('mouseup', () => {
     if (isCreatingBubble && currentBubble) {
         isCreatingBubble = false;
         
+        // Check if adding this bubble would exceed 5
+        if (bubbles.length >= 5) {
+            const oldestBubble = bubbles.shift(); // Remove the oldest bubble
+            if (!oldestBubble.popped) {
+                createExplosion(oldestBubble.x, oldestBubble.y);
+                oldestBubble.element.classList.add('bubble-pop');
+                oldestBubble.popped = true;
+                setTimeout(() => {
+                    if (oldestBubble.element.parentNode) {
+                        document.body.removeChild(oldestBubble.element);
+                    }
+                }, 300);
+            }
+        }
+
         const sizeRatio = (currentBubble.size - minBubbleSize) / (maxBubbleSize - minBubbleSize);
         currentBubble.velocityX = (Math.random() - 0.5) * 2 * (1 + sizeRatio);
         currentBubble.velocityY = -Math.random() * 2 - 1 - sizeRatio;
@@ -296,8 +315,8 @@ document.addEventListener('mousemove', (event) => {
         
         currentBubble.element.style.width = newSize + 'px';
         currentBubble.element.style.height = newSize + 'px';
-        currentBubble.element.style.left = event.clientX + 'px';
-        currentBubble.element.style.top = event.clientY + 'px';
+        currentBubble.element.style.left = currentBubble.x + 'px';
+        currentBubble.element.style.top = currentBubble.y + 'px';
     }
 });
 
@@ -310,6 +329,7 @@ document.addEventListener('keydown', (event) => {
             }
         });
         bubbles = [];
+        bubbleCounter = 1; // Reset counter
     }
 });
 
@@ -376,7 +396,6 @@ function checkBubbleCollisions() {
                 createExplosion(bubble1.x, bubble1.y);
                 bubble1.element.classList.add('bubble-pop');
                 bubble1.popped = true;
-
                 setTimeout(() => {
                     if (bubble1.element.parentNode) {
                         document.body.removeChild(bubble1.element);
