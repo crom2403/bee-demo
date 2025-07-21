@@ -1,15 +1,51 @@
+
 body {
     margin: 0;
     overflow: hidden;
-    background-image: url("https://images.pexels.com/photos/7130569/pexels-photo-7130569.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2");
+    background-image: url("images/background.jpeg");
     background-size: cover; /* Thêm dòng này */
     background-position: center; /* (khuyến nghị) căn giữa hình nền */
     font-family: Arial, sans-serif;
     width: 100vw;
     height: 100vh;
     position: relative;
+    cursor: pointer;
 }
 
+.beehive {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 150px;
+    height: 120px;
+    background-image: url('images/hive.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: left top;
+    transition: transform 0.3s ease;
+    transform: rotate( 15deg);
+    z-index: 100;
+}
+
+.beehive.shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0) rotate(-2deg); }
+    20%, 80% { transform: translate3d(2px, 0, 0) rotate(3deg); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0) rotate(-4deg); }
+    40%, 60% { transform: translate3d(4px, 0, 0) rotate(4deg); }
+}
+@media (max-width: 768px) {
+    .beehive {
+        width: 100px;
+        height: 120px;
+        transform: rotate(15deg);
+        top: 10px;
+        left: 10px;
+    }
+}
 .dark-overlay {
     position: fixed;
     top: 0;
@@ -34,7 +70,14 @@ body.dark-mode .dark-overlay {
     opacity: 1;
     background: linear-gradient(to bottom, #000000 0%, #0a0a14 100%);
 }
-
+/* Cloud styles */
+.cloud {
+    position: absolute;
+    background: no-repeat center center;
+    background-size: contain;
+    pointer-events: none; /* Prevent clouds from interfering with clicks */
+    opacity: 0.8; /* Slightly transparent for a softer look */
+}
 /* Stars container */
 .stars-container {
     position: fixed;
@@ -105,7 +148,7 @@ body.dark-mode .dark-overlay {
     pointer-events: none;
     transform-origin: center;
     transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
-    z-index: 10;
+    z-index: 1000;
 }
 
 .bee.captured {
@@ -124,7 +167,7 @@ body.dark-mode .dark-overlay {
 
 .bee1,
 .bee2 {
-    background-image: url("https://i.pinimg.com/originals/b2/1d/bd/b21dbd909e730c8dd7eea0421929eb68.gif");
+    background-image: url("images/bee.gif");
 }
 
 body.dark-mode .bee {
@@ -553,4 +596,19 @@ body.dark-mode .meteor::after {
         drop-shadow(0 0 10px rgba(255, 255, 255, 0.6))
         drop-shadow(0 0 15px rgba(255, 255, 255, 0.4))
         drop-shadow(0 0 20px rgba(255, 215, 0, 0.3)); /* Trail glow in dark mode */
+}
+.flocking-bee {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    transform-origin: center;
+    transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+    z-index: 10;
+}
+
+body.dark-mode .flocking-bee {
+    filter: drop-shadow(0 0 10px #ffd700) drop-shadow(0 0 20px #ffd700) drop-shadow(0 0 30px #ffd700);
 }

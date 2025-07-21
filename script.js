@@ -32,7 +32,7 @@ const createFlower = () => {
 
     const flowerElement = document.createElement("div");
     flowerElement.className = "flower";
-    flowerElement.style.backgroundImage = 'url("https://i.pinimg.com/originals/ab/5a/0e/ab5a0e2686b7d63cc6c9cf698295de46.gif")';
+    flowerElement.style.backgroundImage = 'url("images/flower.gif")';
     document.body.appendChild(flowerElement);
     const x = Math.random() * (windowWidth - 40);
     flowers.push({
@@ -105,14 +105,14 @@ let bees = [
 
 // Parameters
 let beeSpeed = 0.03;
-const defaultBeeSpeed = 0.03;
+const defaultBeeSpeed = 0.05;
 const boostedBeeSpeed = 0.1; // Tốc độ bay nhanh hơn khi chạm hoa
 let speedBoostEndTime = 0;
 const waypointCount = 5;
 let trailLength = 15;
 let trailInterval = 30;
 const stunDuration = 1000;
-const collisionDistance = 120;
+const collisionDistance = 30;
 const avoidanceDistance = 100;
 const bounceStrength = 300;
 const avoidanceStrength = 50;
@@ -160,7 +160,7 @@ const generateWaypoints = (isSecondary = false, baseX = null, baseY = null) => {
 // Bubble management
 let bubbles = [];
 const minBubbleSize = 20;
-const maxBubbleSize = 200;
+const maxBubbleSize = 1000;
 const growthRate = 100;
 let bubbleCounter = 1; // Tracks bubble numbers internally
 
@@ -442,23 +442,34 @@ const updateSize = (dist) => {
 
 // Thêm 1 con ong mới
 const addNewBee = () => {
+    if (bees.length === 0) return; // Đảm bảo có ít nhất 1 con ong để tạo ong mới
     const newBee = createBee(bees[0]); // Tạo ong mới dựa trên ong đầu tiên
-    bees.push(newBee);
+    if (newBee) { // Chỉ thêm nếu tạo ong mới thành công
+        bees.push(newBee);
+    }
 };
 
 const createBee = (parentBee) => {
+    const totalBees = bees.length + 1;
+    if (totalBees > 16) return null; // Return null instead of undefined when max bees reached
+    
     const element = document.createElement("div");
     element.className = "bee";
-    element.style.backgroundImage = 'url("https://i.pinimg.com/originals/b2/1d/bd/b21dbd909e730c8dd7eea0421929eb68.gif")';
+    element.style.backgroundImage = 'url("images/bee.gif")';
     document.body.appendChild(element);
-    const totalBees = bees.length + 1;
+    
     const size = 80 / (1 + Math.log2(totalBees));
+    
+    // Default position if no parent bee is provided
+    const defaultX = window.innerWidth / 2 + (Math.random() - 0.5) * 100;
+    const defaultY = window.innerHeight / 2 + (Math.random() - 0.5) * 100;
+    
     return {
         element,
-        x: parentBee.x + (Math.random() - 0.5) * 20,
-        y: parentBee.y + (Math.random() - 0.5) * 20,
-        targetX: parentBee.targetX,
-        targetY: parentBee.targetY,
+        x: parentBee ? parentBee.x + (Math.random() - 0.5) * 20 : defaultX,
+        y: parentBee ? parentBee.y + (Math.random() - 0.5) * 20 : defaultY,
+        targetX: parentBee ? parentBee.targetX : defaultX,
+        targetY: parentBee ? parentBee.targetY : defaultY,
         size,
         rotation: 0,
         velocityX: 0,
@@ -466,11 +477,11 @@ const createBee = (parentBee) => {
         isStunned: false,
         isFalling: false,
         isFlipped: false,
-        waypoints: generateWaypoints(true, parentBee.x, parentBee.y),
+        waypoints: parentBee ? generateWaypoints(true, parentBee.x, parentBee.y) : generateWaypoints(true, defaultX, defaultY),
         currentWaypoint: 0,
         trailElements: [],
         lastTrailTime: 0,
-        isOriginal: false
+        isOriginal: !parentBee // First bee is original if no parent provided
     };
 };
 
@@ -697,10 +708,6 @@ const checkBeeFlowerCollision = () => {
         const hitRadius = 60; // Bán kính va chạm
         
         if (dist < hitRadius) {
-            // Tăng tốc độ bay cho ong
-            beeSpeed = boostedBeeSpeed;
-            speedBoostEndTime = Date.now() + 2000; // Tăng tốc trong 2 giây
-            
             // Làm hoa bay lên
             const dx = bee.x - flower.x;
             const dy = bee.y - flower.y;
@@ -725,8 +732,187 @@ const getHeartPosition = (t, offsetX = 0, offsetY = 0) => {
     posY = Math.max(50, Math.min(windowHeight - 50, posY));
     return { x: posX, y: posY };
 };
+// Mảng lưu trữ các đối tượng đám mây
+const clouds = [];
+
+// Biến kiểm tra trạng thái tạo đám mây
+let isSpawning = true; // true: đang tạo đám mây, false: đã dừng
+let spawnInterval; // Lưu ID của setInterval để dừng
+let hasCloud4 = false; // Biến kiểm tra xem cloud_4.png đang tồn tại
+
+// Danh sách hình ảnh đám mây và kích thước tự nhiên (giả định nếu không tải được)
+// Sửa kích thước thực tế (width, height) cho từng hình ảnh nếu biết
+const cloudImages = [
+    { src: 'images/cloud_1.png', width: 300, height: 180 }, // Ví dụ: tỉ lệ 5:3
+    { src: 'images/cloud_2.png', width: 250, height: 200 }, // Ví dụ: tỉ lệ 5:4
+    { src: 'images/cloud_3.png', width: 400, height: 160 }, // Ví dụ: tỉ lệ 5:2
+    { src: 'images/cloud_4.png', width: 320, height: 200 }, // Ví dụ: tỉ lệ 8:5
+    { src: 'images/cloud_5.png', width: 280, height: 210 }, // Ví dụ: tỉ lệ 4:3
+    { src: 'images/cloud_6.png', width: 350, height: 175 }  // Ví dụ: tỉ lệ 2:1
+];
+
+// Hàm chọn ngẫu nhiên hình ảnh đám mây, đảm bảo chỉ 1 cloud_4.png
+function getRandomCloud() {
+    let image;
+    while (true) {
+        image = cloudImages[Math.floor(Math.random() * cloudImages.length)];
+        if (image.src.includes('cloud_4.png')) {
+            if (hasCloud4) {
+                continue; // Bỏ qua nếu đã có cloud_4
+            } else {
+                hasCloud4 = true; // Đánh dấu đã chọn cloud_4
+                break;
+            }
+        } else {
+            break; // Không phải cloud_4 → chọn ngay
+        }
+    }
+    return image;
+}
+
+// Hàm xóa tất cả đám mây
+function clearAllClouds() {
+    // Xóa từng đám mây khỏi DOM
+    clouds.forEach(cloud => cloud.element.remove());
+    // Xóa toàn bộ mảng clouds
+    clouds.length = 0;
+    // Đặt lại hasCloud4 để cho phép tạo lại cloud_4.png
+    hasCloud4 = false;
+}
+
+// Hàm tạo một đám mây mới
+function createCloud() {
+    // Kiểm tra giới hạn tối đa 7 đám mây
+    if (clouds.length >= 7) return;
+
+    const cloud = document.createElement('div');
+    cloud.classList.add('cloud');
+
+    // Chọn ngẫu nhiên một hình ảnh từ danh sách
+    // Sửa danh sách cloudImages để thêm hoặc thay đổi hình ảnh
+    const image = getRandomCloud();
+    cloud.style.background = `url('${image.src}') no-repeat center center`;
+    cloud.style.backgroundSize = 'contain';
+
+    // Kích thước ngẫu nhiên cho chiều dài nhất (200–700px)
+    // Sửa '200' (tối thiểu) hoặc '500' (phạm vi) để thay đổi kích thước
+    const maxSize = Math.random() * 500 + 200;
+    // Tính toán chiều rộng và cao dựa trên tỷ lệ hình ảnh
+    const aspectRatio = image.width / image.height;
+    let width, height;
+    if (image.width > image.height) {
+        width = maxSize;
+        height = maxSize / aspectRatio;
+    } else {
+        height = maxSize;
+        width = maxSize * aspectRatio;
+    }
+    cloud.style.width = `${width}px`;
+    cloud.style.height = `${height}px`;
+
+    // Vị trí dọc ngẫu nhiên (0% đến 20% chiều cao màn hình)
+    // Sửa '0.2' để thay đổi phạm vi xuất hiện (ví dụ: 0.3 cho 0%–30%)
+    const baseY = Math.random() * (window.innerHeight * 0.2);
+    cloud.style.top = `${baseY}px`;
+
+    // Bắt đầu bên trái, lùi vào 100px so với mép
+    cloud.style.left = `${-width + 100}px`;
+
+    // Tốc độ di chuyển ngang (mất 10–20 giây để qua màn hình)
+    // Sửa '10' (thời gian tối thiểu) hoặc '10' (phạm vi) để thay đổi tốc độ
+    const speed = (window.innerWidth / (Math.random() * 10 + 10)) / 120;
+
+    // Tần số và biên độ dao động dọc (lên xuống)
+    // Sửa '0.005' và '0.01' để thay đổi tốc độ dao động (nhỏ hơn = chậm hơn)
+    // Sửa '30' và '30' để thay đổi biên độ (lớn hơn = dao động mạnh hơn)
+    const bobFrequency = Math.random() * 0.01 + 0.005; // Tần số: 0.005–0.015 (~2–4s chu kỳ)
+    const bobAmplitude = Math.random() * 30 + 30; // Biên độ: 30–60px
+
+    // Tần số và biên độ hiệu ứng phình to/thu nhỏ (như nhịp tim)
+    // Sửa '12.566/2' để thay đổi chu kỳ (ví dụ: 12.566 cho 0.5s, 25.132 cho 0.25s)
+    // Sửa '0.03' để thay đổi mức độ phình to/thu nhỏ (lớn hơn = rõ hơn)
+    const scaleFrequency = 12.566 / 2; // Chu kỳ ~1s (0.5s thu nhỏ, 0.5s phình to)
+    const scaleAmplitude = 0.03; // Quy mô: 0.97x–1.03x
+
+    // Lưu thuộc tính đám mây
+    const cloudObj = {
+        element: cloud,
+        x: -width + 100, // Vị trí x ban đầu
+        baseY: baseY, // Vị trí y cơ bản
+        speed: speed,
+        size: width, // Sử dụng width để kiểm tra thoát màn hình
+        bobFrequency: bobFrequency,
+        bobAmplitude: bobAmplitude,
+        scaleFrequency: scaleFrequency,
+        scaleAmplitude: scaleAmplitude,
+        time: Math.random() * 100, // Thời gian bắt đầu ngẫu nhiên để tránh đồng bộ
+        imageSrc: image.src // Lưu đường dẫn hình ảnh để kiểm tra cloud_4
+    };
+
+    // Thêm vào DOM
+    document.body.appendChild(cloud);
+
+    // Thêm vào mảng clouds
+    clouds.push(cloudObj);
+}
+
+// Hàm cập nhật vị trí và hiệu ứng của đám mây
+function updateClouds() {
+    const currentTime = performance.now() / 1000; // Thời gian tính bằng giây
+    clouds.forEach((cloud, index) => {
+        // Di chuyển đám mây sang phải
+        cloud.x += cloud.speed;
+
+        // Hiệu ứng dao động dọc: Sử dụng sóng sin
+        const bobOffset = Math.sin(cloud.time + currentTime * cloud.bobFrequency) * cloud.bobAmplitude;
+        cloud.element.style.top = `${cloud.baseY + bobOffset}px`;
+
+        // Hiệu ứng phình to/thu nhỏ: Sử dụng sóng sin cho nhịp tim
+        const scale = 1 + Math.sin(cloud.time + currentTime * cloud.scaleFrequency) * cloud.scaleAmplitude;
+        cloud.element.style.transform = `translateX(${cloud.x}px) scale(${scale})`;
+
+        // Xóa đám mây nếu ra khỏi màn hình
+        if (cloud.x > window.innerWidth + cloud.size * scale) {
+            if (cloud.imageSrc.includes('cloud_4.png')) {
+                hasCloud4 = false; // Đặt lại để cho phép tạo lại cloud_4
+            }
+            cloud.element.remove(); // Xóa khỏi DOM
+            clouds.splice(index, 1); // Xóa khỏi mảng
+        }
+    });
+}
+
+// Hàm tạo đám mây định kỳ
+function spawnClouds() {
+    // Tạo 1 đám mây ngay lập tức khi tải trang
+    // Sửa '1' để thay đổi số lượng đám mây ban đầu (ví dụ: 2 để tạo 2 đám mây)
+    createCloud();
+
+    // Tạo đám mây mới mỗi 5–10 giây
+    // Sửa '5000' và '5000' để thay đổi khoảng thời gian
+    spawnInterval = setInterval(() => {
+        createCloud();
+    }, Math.random() * 5000 + 5000);
+}
+
+// Xử lý sự kiện nhấn phím K để bật/tắt đám mây
+// Nhấn K lần 1: xóa tất cả đám mây và dừng tạo mới
+// Nhấn K lần 2: khởi động lại quá trình tạo đám mây
+document.addEventListener('keydown', (event) => {
+    if (event.key.toLowerCase() === 'k') {
+        if (isSpawning) {
+            clearAllClouds(); // Xóa tất cả đám mây
+            clearInterval(spawnInterval); // Dừng tạo đám mây
+            isSpawning = false;
+        } else {
+            spawnClouds(); // Khởi động lại tạo đám mây
+            isSpawning = true;
+        }
+    }
+});
 
 const animate = () => {
+    updateClouds();
     const now = Date.now();
 
     flowers.forEach(flower => {
@@ -1090,7 +1276,7 @@ function createShootingStar(forceCircle = false) {
     for (let i = 0; i < circleCount; i++) {
         const circle = document.createElement('div');
         circle.className = 'trail-circle';
-        const size = (12 - (i * 0.7)) * 0.5; // 50% smaller size
+        const size = (12 - (i * 0.7));
         circle.style.width = `${size}px`;
         circle.style.height = `${size}px`;
         // Thêm màu sắc cho vòng tròn đuôi sao băng
@@ -1485,6 +1671,18 @@ function toggleDarkMode() {
 // Toggle dark mode on button click
 document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
 
+// Make beehive shake when clicked
+const beehive = document.getElementById('beehive');
+beehive.addEventListener('click', function(e) {
+    e.stopPropagation(); // Prevent event from bubbling to document
+    this.classList.add('shake');
+    
+    // Remove the shake class after animation completes
+    setTimeout(() => {
+        this.classList.remove('shake');
+    }, 500);
+});
+
 // Function to reset all bees to the same size
 function resetBeesSize() {
     const targetSize = 40; // Target size in pixels (reduced from 60px to 40px)
@@ -1613,6 +1811,50 @@ document.addEventListener('keydown', (event) => {
         // Nhấn H để tạo sao băng đặc biệt (luôn bay vòng tròn)
         event.preventDefault();
         createShootingStar(true); // Force circle mode
+    } else if (event.key.toLowerCase() === 'k') {
+        // Nhấn K để các con ong bay về tổ
+        event.preventDefault();
+        
+        // Vị trí tổ ong (giống trong beehive.js)
+        const hiveX = 60;
+        const hiveY = 70;
+        const hiveRadius = 50; // Bán kính xung quanh tổ ong
+        
+        // Đếm số ong đã về tổ
+        let beesReturned = 0;
+        
+        // Lặp qua tất cả các con ong (bỏ qua 2 con ong đầu tiên)
+        for (let i = 2; i < bees.length; i++) {
+            const bee = bees[i];
+            
+            // Đặt mục tiêu về tổ ong
+            bee.targetX = hiveX;
+            bee.targetY = hiveY;
+            
+            // Kiểm tra xem ong đã đến tổ chưa
+            const distToHive = distance(bee.x, bee.y, hiveX, hiveY);
+            if (distToHive < hiveRadius) {
+                // Đánh dấu để xóa ong
+                bee.shouldRemove = true;
+                beesReturned++;
+            }
+        }
+        
+        // Xóa các ong đã về tổ
+        if (beesReturned > 0) {
+            // Lọc ra các ong không bị đánh dấu xóa
+            bees = bees.filter(bee => !bee.shouldRemove);
+            
+            // Xóa các phần tử DOM của ong đã bị xóa
+            document.querySelectorAll('.bee').forEach(beeEl => {
+                if (beeEl !== bee1 && beeEl !== bee2 && !bees.some(bee => bee.element === beeEl)) {
+                    beeEl.remove();
+                }
+            });
+            
+            // Hiển thị thông báo
+            showFeedback(`${beesReturned} con ong đã về tổ`);
+        }
     } else if (event.key.toLowerCase() === 'x' && document.body.classList.contains('dark-mode')) {
         event.preventDefault();
         
@@ -1677,4 +1919,5 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+spawnClouds();
 animate();
